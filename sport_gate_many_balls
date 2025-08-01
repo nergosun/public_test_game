@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>SportGate Tap Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      touch-action: manipulation;
+      font-family: sans-serif;
+      background-color: #008000;
+    }
+
+    #score, #title {
+      position: absolute;
+      left: 20px;
+      z-index: 10;
+      color: white;
+      text-shadow: 1px 1px 4px black;
+      user-select: none;
+    }
+
+    #score {
+      top: 40px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    #title {
+      top: 10px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #ffeb3b;
+    }
+
+    #gameCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="title">SportGate.io</div>
+  <div id="score">Очки: 0</div>
+  <canvas id="gameCanvas"></canvas>
+
+  <script>
+    window.onload = () => {
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+
+      let score = 0;
+      const balls = [];
+      const goal = {};
+      const goalkeeper = {};
+
+      function resizeCanvas() {
+        canvas.width = document.documentElement.clientWidth;
+        canvas.height = document.documentElement.clientHeight;
+
+        goal.x = canvas.width / 2 - 100;
+        goal.y = 60;
+        goal.width = 200;
+        goal.height = 30;
+
+        goalkeeper.radius = 18;
+        goalkeeper.x = canvas.width / 2 - 15;
+        goalkeeper.y = goal.y + goal.height + 10;
+        goalkeeper.speedX = 1.5;
+        goalkeeper.direction = 1;
+      }
+
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+
+      function spawnBall() {
+        balls.push({
+          x: canvas.width / 2,
+          y: canvas.height - 50,
+          radius: 20,
+          speedY: -10,
+          angle: 0,
+          active: true
+        });
+      }
+
+      canvas.addEventListener("click", spawnBall);
+      canvas.addEventListener("touchstart", spawnBall);
+
+      function drawGoal() {
+        ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+        ctx.fillRect(goal.x - 10, goal.y - 10, goal.width + 20, goal.height + 20);
+
+        ctx.fillStyle = "#FFD700";
+        ctx.fillRect(goal.x, goal.y, goal.width, goal.height);
+
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(goal.x - 10, goal.y - 10, goal.width + 20, goal.height + 20);
+      }
+
+      function drawGoalkeeper() {
+        ctx.beginPath();
+        ctx.fillStyle = "red";
+        ctx.arc(goalkeeper.x, goalkeeper.y, goalkeeper.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function updateGoalkeeper() {
+        goalkeeper.x += goalkeeper.speedX * goalkeeper.direction;
+        if (
+          goalkeeper.x + goalkeeper.radius > goal.x + goal.width ||
+          goalkeeper.x - goalkeeper.radius < goal.x
+        ) {
+          goalkeeper.direction *= -1;
+        }
+      }
+
+      function drawHexagon(ctx, x, y, size) {
+        const offset = Math.PI / 6;
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const angle = offset + i * Math.PI / 3;
+          const px = x + size * Math.cos(angle);
+          const py = y + size * Math.sin(angle);
+          i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      function drawBall(ball) {
+        ctx.save();
+        ctx.translate(ball.x, ball.y);
+        ctx.rotate(ball.angle);
+        ctx.beginPath();
+        ctx.fillStyle = "white";
+        ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "black";
+        ctx.stroke();
+
+        ctx.fillStyle = "black";
+        drawHexagon(ctx, -7, -7, 6);
+        drawHexagon(ctx, 8, -5, 6);
+        drawHexagon(ctx, 0, 9, 6);
+        ctx.restore();
+      }
+
+      function updateBalls() {
+        for (let i = balls.length - 1; i >= 0; i--) {
+          const ball = balls[i];
+          if (ball.active) {
+            ball.y += ball.speedY;
+            ball.angle += 0.1;
+
+            const dx = ball.x - goalkeeper.x;
+            const dy = ball.y - goalkeeper.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < ball.radius + goalkeeper.radius) {
+              ball.active = false;
+              balls.splice(i, 1);
+              continue;
+            }
+
+            if (
+              ball.y - ball.radius < goal.y + goal.height &&
+              ball.x > goal.x &&
+              ball.x < goal.x + goal.width
+            ) {
+              score += 1;
+              document.getElementById("score").textContent = "Очки: " + score;
+              ball.active = false;
+              balls.splice(i, 1);
+            } else if (ball.y + ball.radius < 0) {
+              ball.active = false;
+              balls.splice(i, 1);
+            }
+          }
+        }
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGoal();
+        drawGoalkeeper();
+        balls.forEach(drawBall);
+        updateBalls();
+        updateGoalkeeper();
+        requestAnimationFrame(draw);
+      }
+
+      draw();
+    };
+  </script>
+</body>
+</html>
