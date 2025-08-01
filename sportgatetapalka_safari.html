@@ -56,21 +56,13 @@
       const ctx = canvas.getContext("2d");
 
       let score = 0;
-      let angle = 0;
-
-      const ball = {};
+      const balls = [];
       const goal = {};
       const goalkeeper = {};
 
       function resizeCanvas() {
         canvas.width = document.documentElement.clientWidth;
         canvas.height = document.documentElement.clientHeight;
-
-        ball.x = canvas.width / 2;
-        ball.y = canvas.height - 50;
-        ball.radius = 20;
-        ball.speedY = -10;
-        ball.active = false;
 
         goal.x = canvas.width / 2 - 100;
         goal.y = 60;
@@ -84,11 +76,22 @@
         goalkeeper.direction = 1;
       }
 
-      window.addEventListener("resize", () => {
-        resizeCanvas();
-      });
-
+      window.addEventListener("resize", resizeCanvas);
       resizeCanvas();
+
+      function spawnBall() {
+        balls.push({
+          x: canvas.width / 2,
+          y: canvas.height - 50,
+          radius: 20,
+          speedY: -10,
+          angle: 0,
+          active: true
+        });
+      }
+
+      canvas.addEventListener("click", spawnBall);
+      canvas.addEventListener("touchstart", spawnBall);
 
       function drawGoal() {
         ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
@@ -119,36 +122,6 @@
         }
       }
 
-      function checkCollisionWithGoalkeeper() {
-        const dx = ball.x - goalkeeper.x;
-        const dy = ball.y - goalkeeper.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        if (distance < ball.radius + goalkeeper.radius) {
-          ball.active = false;
-          ball.y = canvas.height - 50;
-          angle = 0;
-        }
-      }
-
-      function drawBall() {
-        ctx.save();
-        ctx.translate(ball.x, ball.y);
-        ctx.rotate(angle);
-        ctx.beginPath();
-        ctx.fillStyle = "white";
-        ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "black";
-        ctx.stroke();
-
-        ctx.fillStyle = "black";
-        drawHexagon(ctx, -7, -7, 6);
-        drawHexagon(ctx, 8, -5, 6);
-        drawHexagon(ctx, 0, 9, 6);
-
-        ctx.restore();
-      }
-
       function drawHexagon(ctx, x, y, size) {
         const offset = Math.PI / 6;
         ctx.beginPath();
@@ -162,24 +135,53 @@
         ctx.fill();
       }
 
-      function updateBall() {
-        if (ball.active) {
-          ball.y += ball.speedY;
-          angle += 0.1;
-          if (
-            ball.y - ball.radius < goal.y + goal.height &&
-            ball.x > goal.x &&
-            ball.x < goal.x + goal.width
-          ) {
-            score += 1;
-            document.getElementById("score").textContent = "Очки: " + score;
-            ball.active = false;
-            ball.y = canvas.height - 50;
-            angle = 0;
-          } else if (ball.y + ball.radius < 0) {
-            ball.active = false;
-            ball.y = canvas.height - 50;
-            angle = 0;
+      function drawBall(ball) {
+        ctx.save();
+        ctx.translate(ball.x, ball.y);
+        ctx.rotate(ball.angle);
+        ctx.beginPath();
+        ctx.fillStyle = "white";
+        ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "black";
+        ctx.stroke();
+
+        ctx.fillStyle = "black";
+        drawHexagon(ctx, -7, -7, 6);
+        drawHexagon(ctx, 8, -5, 6);
+        drawHexagon(ctx, 0, 9, 6);
+        ctx.restore();
+      }
+
+      function updateBalls() {
+        for (let i = balls.length - 1; i >= 0; i--) {
+          const ball = balls[i];
+          if (ball.active) {
+            ball.y += ball.speedY;
+            ball.angle += 0.1;
+
+            const dx = ball.x - goalkeeper.x;
+            const dy = ball.y - goalkeeper.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < ball.radius + goalkeeper.radius) {
+              ball.active = false;
+              balls.splice(i, 1);
+              continue;
+            }
+
+            if (
+              ball.y - ball.radius < goal.y + goal.height &&
+              ball.x > goal.x &&
+              ball.x < goal.x + goal.width
+            ) {
+              score += 1;
+              document.getElementById("score").textContent = "Очки: " + score;
+              ball.active = false;
+              balls.splice(i, 1);
+            } else if (ball.y + ball.radius < 0) {
+              ball.active = false;
+              balls.splice(i, 1);
+            }
           }
         }
       }
@@ -188,20 +190,11 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawGoal();
         drawGoalkeeper();
-        drawBall();
-        updateBall();
+        balls.forEach(drawBall);
+        updateBalls();
         updateGoalkeeper();
-        checkCollisionWithGoalkeeper();
         requestAnimationFrame(draw);
       }
-
-      canvas.addEventListener("touchstart", () => {
-        if (!ball.active) ball.active = true;
-      });
-
-      canvas.addEventListener("click", () => {
-        if (!ball.active) ball.active = true;
-      });
 
       draw();
     };
