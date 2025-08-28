@@ -35,7 +35,7 @@
       top: 10px;
       font-size: 20px;
       font-weight: bold;
-      color: #ffeb3b;
+      color: #ffffff;
     }
 
     #gameCanvas {
@@ -47,7 +47,7 @@
   </style>
 </head>
 <body>
-  <div id="title">Hi SportGate.io</div>
+  <div id="title">Player SportGate.io</div>
   <div id="score">Tokens: 0</div>
   <canvas id="gameCanvas"></canvas>
 
@@ -58,13 +58,31 @@
       const user = tg.initDataUnsafe.user;
       if (user) {
         const username = user.username || `${user.first_name} ${user.last_name || ''}`;
-        document.getElementById("title").textContent = `Hi ${username}!`;
+        document.getElementById("title").textContent = `Player: ${username}`;
       }
 	  
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
 
+	  // Обработчики тача
+	  canvas.addEventListener("touchstart", () => {
+	    lastTouchTime = Date.now();
+	    showIdleCircle = false;
+	  });
+	  
+	  canvas.addEventListener("mousedown", () => {
+	    lastTouchTime = Date.now();
+	    showIdleCircle = false;
+	  });
+
       let score = 0;
+	  let idlePulse = 0;
+	  let jumpOffset = 0;
+	  let armOffset = 0;
+	  let legOffset = 0;
+	  let sadTimer = 0
+	  let lastTouchTime = Date.now();
+	  let showIdleCircle = false;
 	  const floatingTexts = [];
 	  const fireworks = [];
       const balls = [];
@@ -270,27 +288,93 @@ function drawGoal() {
   ctx.lineWidth = 2;
   ctx.strokeRect(goal.x+1, goal.y, goal.width-2, goal.height);
 }
-      function drawGoalkeeper() {
-	    // Тело — вертикальный овал
-		ctx.beginPath();
-		ctx.ellipse(
-			goalkeeper.x, // центр по X
-			goalkeeper.y, // чуть ниже головы
-			goalkeeper.radius * 2, // ширина тела (уже чем голова)
-			goalkeeper.radius * 0.6,   // высота тела (в 2 раза длиннее головы)
-			0, 0, Math.PI * 2
-		);
-		ctx.fillStyle = "darkred";
-		ctx.fill();
+
+function drawGoalkeeper() {
+  ctx.save();
+  ctx.translate(0, jumpOffset); // анимация прыжка
+  const skinColor = "#F4C2C2"; // светлый телесный (можно заменить на другой оттенок)
+
+  // Майка (верх туловища)
+  ctx.fillStyle = "#A9A9A9"; // серая
+  ctx.fillRect(goalkeeper.x - 10, goalkeeper.y, 20, 25);
+  ctx.font = "bold 16px sans-serif";
+  ctx.fillStyle = "white";
+  ctx.textAlign = "center";
+  ctx.fillText("0", goalkeeper.x, goalkeeper.y + 18);
   
-		// Голова вратаря
-        ctx.beginPath();
-        ctx.fillStyle = "red";
-        ctx.arc(goalkeeper.x, goalkeeper.y, goalkeeper.radius, 0, Math.PI * 2);
-        ctx.fill();
+  // Шорты
+  ctx.fillStyle = "#00BFFF"; // голубые
+  ctx.fillRect(goalkeeper.x - 10, goalkeeper.y + 25, 20, 15);
+  
+  // Голова
+  ctx.beginPath();
+  ctx.arc(goalkeeper.x, goalkeeper.y - 10, 12, 0, Math.PI * 2);
+  ctx.fillStyle = skinColor;
+  ctx.fill();
 
-      }
+  // Глаза
+  ctx.beginPath();
+  ctx.arc(goalkeeper.x - 5, goalkeeper.y - 23, 5, 0, Math.PI * 2);
+  ctx.fillStyle = "white";
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(goalkeeper.x - 5, goalkeeper.y - 23, 1.5, 0, Math.PI * 2);
+  ctx.fillStyle = "black";
+  ctx.fill();
 
+  ctx.beginPath();
+  ctx.arc(goalkeeper.x + 5, goalkeeper.y - 23, 5, 0, Math.PI * 2);
+  ctx.fillStyle = "white";
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(goalkeeper.x + 5, goalkeeper.y - 23, 1.5, 0, Math.PI * 2);
+  ctx.fillStyle = "black";
+  ctx.fill();
+
+  // Руки
+  ctx.fillStyle = skinColor;
+  ctx.fillRect(goalkeeper.x - 25, goalkeeper.y + 5 + armOffset, 15, 8); // левая
+  ctx.fillRect(goalkeeper.x + 10, goalkeeper.y + 5 + armOffset, 15, 8); // правая
+
+  // Перчатки
+  ctx.beginPath();
+  ctx.arc(goalkeeper.x - 30, goalkeeper.y + 9 + armOffset, 6, 0, Math.PI * 2);
+  ctx.fillStyle = "#FFD700";
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(goalkeeper.x + 30, goalkeeper.y + 9 + armOffset, 6, 0, Math.PI * 2);
+  ctx.fillStyle = "#FFD700";
+  ctx.fill();
+
+  // Ноги
+  ctx.fillStyle = skinColor;
+  ctx.fillRect(goalkeeper.x - 8, goalkeeper.y + 40 + legOffset, 6, 10);
+  ctx.fillRect(goalkeeper.x + 2, goalkeeper.y + 40 - legOffset, 6, 10);
+
+  // Бутсы
+  ctx.fillStyle = "black";
+  ctx.fillRect(goalkeeper.x - 8, goalkeeper.y + 50 + legOffset, 6, 5);
+  ctx.fillRect(goalkeeper.x + 2, goalkeeper.y + 50 - legOffset, 6, 5);
+  
+  // Эмоции — рот
+  if (sadTimer > 0) {
+    ctx.beginPath();
+    ctx.arc(goalkeeper.x, goalkeeper.y - 5, 6, Math.PI, 2 * Math.PI); // грустный рот
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    sadTimer--;
+  } else {
+    ctx.beginPath();
+    ctx.arc(goalkeeper.x, goalkeeper.y - 15, 6, 0, Math.PI); // улыбка
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
       function updateGoalkeeper() {
         goalkeeper.x += goalkeeper.speedX * goalkeeper.direction;
         if (
@@ -299,6 +383,9 @@ function drawGoal() {
         ) {
           goalkeeper.direction *= -1;
         }
+		jumpOffset = Math.sin(Date.now() / 200) * 5; // плавное подпрыгивание
+		armOffset = Math.sin(Date.now() / 300) * 4; // плавное движение вверх-вниз
+		legOffset = Math.sin(Date.now() / 250) * 3; // плавное движение ног
       }
 
       function drawHexagon(ctx, x, y, size) {
@@ -345,7 +432,9 @@ function drawGoal() {
             const dy = ball.y - goalkeeper.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             if (distance < ball.radius + goalkeeper.radius) {
-			  spawnFloatingText("X", ball.x, ball.y, "#ff4444"); // красный
+			  const randX = goal.x + 20 + Math.random() * (goal.width - 40); // внутри ширины ворот
+			  const randY = goal.y + goal.height + 30; 
+			  spawnFloatingText("X", randX, randY, "#ff4444"); // красный
               ball.active = false;
               balls.splice(i, 1);
               continue;
@@ -360,6 +449,7 @@ function drawGoal() {
 			  const randX = goal.x + 20 + Math.random() * (goal.width - 40); // внутри ворот, с небольшим отступом
 			  const randY = Math.random() * canvas.height * 0.6; // верхняя часть экрана
 			  spawnFloatingText("+1", randX, randY, getRandomPlusColor());
+			  sadTimer = 60; // грустит 60 кадров
               score += 1;
               document.getElementById("score").textContent = "Tokens: " + score;
               ball.active = false;
@@ -384,6 +474,31 @@ function drawGoal() {
         balls.forEach(drawBall);
         updateBalls();
         updateGoalkeeper();
+		
+		if (Date.now() - lastTouchTime > 3000) {
+		  showIdlePrompt = true;
+		} else {
+		  showIdlePrompt = false;
+		}
+		
+		idlePulse = Math.sin(Date.now() / 500) * 0.3 + 0.7;
+		
+		if (showIdlePrompt) {
+		  ctx.font = "bold 36px sans-serif";
+		  ctx.textAlign = "center";
+		  ctx.lineWidth = 2;
+		  ctx.globalAlpha = idlePulse;
+
+		  // Обводка
+		  ctx.strokeStyle = "white";
+		  ctx.strokeText("Tap to shoot", canvas.width / 2, canvas.height / 1.5);
+
+		  // Заливка
+		  ctx.fillStyle = "white";
+		  ctx.fillText("Tap to shoot", canvas.width / 2, canvas.height / 1.5);
+
+		  ctx.globalAlpha = 1;
+		}		
         requestAnimationFrame(draw);
       }
 
