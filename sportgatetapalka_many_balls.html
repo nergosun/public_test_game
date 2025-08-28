@@ -75,12 +75,13 @@
 		
 		const scoreDisplay = document.getElementById("score");
 		const scoreRect = scoreDisplay.getBoundingClientRect();
-
-        goal.x = canvas.width / 2 - 100;
-        goal.y = scoreRect.bottom + 35; // 35 пикселей ниже очков
-        goal.width = 200;
-        goal.height = 30;
-
+		
+		// Ворота
+        goal.x = canvas.width / 2 - 200;
+        goal.y = scoreRect.bottom + 45; // 45 пикселей ниже очков
+        goal.width = 400;
+        goal.height = 40;
+		
         goalkeeper.radius = 18;
         goalkeeper.x = canvas.width / 2 - 15;
         goalkeeper.y = goal.y + goal.height + 10;
@@ -105,19 +106,54 @@
       canvas.addEventListener("click", spawnBall);
       canvas.addEventListener("touchstart", spawnBall);
 
-      function drawGoal() {
-        ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-        ctx.fillRect(goal.x - 10, goal.y - 10, goal.width + 20, goal.height + 20);
+function drawGoal() {
+  const postWidth = 10;
+  const postHeight = goal.height + 40; // Удлиненные стойки
+  const crossbarHeight = 10;
 
-        ctx.fillStyle = "#FFD700";
-        ctx.fillRect(goal.x, goal.y, goal.width, goal.height);
+  // Цвет стоек и перекладины
+  ctx.fillStyle = "#FFFFFF";
 
-        ctx.strokeStyle = "white";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(goal.x - 10, goal.y - 10, goal.width + 20, goal.height + 20);
-      }
+  // Левая стойка — от перекладины до низа ворот
+  ctx.fillRect(goal.x, goal.y - postHeight, postWidth, postHeight+40);
 
+  // Правая стойка
+  ctx.fillRect(goal.x + goal.width - postWidth, goal.y - postHeight, postWidth, postHeight + 40);
+
+  // Перекладина
+  ctx.fillRect(goal.x, goal.y - postHeight, goal.width, crossbarHeight);
+  
+    // Перекладина вторая
+  ctx.fillRect(goal.x, goal.y, goal.width, crossbarHeight);
+
+  // Сетка ворот — от нижней части до перекладины
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+  const gridSize = 8;
+  for (let x = goal.x+5; x < goal.x + goal.width - 5; x += gridSize) {
+    for (let y = goal.y-5; y > goal.y - postHeight + crossbarHeight; y -= gridSize) {
+      ctx.strokeRect(x, y, gridSize, gridSize);
+    }
+  }
+
+  // Обводка ворот (нижняя часть)
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(goal.x, goal.y, goal.width, goal.height);
+}
       function drawGoalkeeper() {
+	    // Тело — вертикальный овал
+		ctx.beginPath();
+		ctx.ellipse(
+			goalkeeper.x, // центр по X
+			goalkeeper.y, // чуть ниже головы
+			goalkeeper.radius * 2, // ширина тела (уже чем голова)
+			goalkeeper.radius * 0.6,   // высота тела (в 2 раза длиннее головы)
+			0, 0, Math.PI * 2
+		);
+		ctx.fillStyle = "darkred";
+		ctx.fill();
+  
+		// Голова вратаря
         ctx.beginPath();
         ctx.fillStyle = "red";
         ctx.arc(goalkeeper.x, goalkeeper.y, goalkeeper.radius, 0, Math.PI * 2);
@@ -213,4 +249,3 @@
   </script>
 </body>
 </html>
-
