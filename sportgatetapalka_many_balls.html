@@ -72,9 +72,12 @@
       function resizeCanvas() {
         canvas.width = document.documentElement.clientWidth;
         canvas.height = document.documentElement.clientHeight;
+		
+		const scoreDisplay = document.getElementById("score");
+		const scoreRect = scoreDisplay.getBoundingClientRect();
 
         goal.x = canvas.width / 2 - 100;
-        goal.y = 60;
+        goal.y = scoreRect.bottom + 10; // 10 пикселей ниже очков
         goal.width = 200;
         goal.height = 30;
 
