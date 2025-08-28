@@ -65,6 +65,7 @@
       const ctx = canvas.getContext("2d");
 
       let score = 0;
+	  const floatingTexts = [];
 	  const fireworks = [];
       const balls = [];
       const goal = {};
@@ -89,6 +90,8 @@
         goalkeeper.speedX = 1.5;
         goalkeeper.direction = 1;
 
+		
+
       }
 
       window.addEventListener("resize", resizeCanvas);
@@ -107,6 +110,56 @@
 
       canvas.addEventListener("click", spawnBall);
       canvas.addEventListener("touchstart", spawnBall);
+
+function spawnFloatingText(text, x, y, color = "white") {
+  floatingTexts.push({
+    text,
+    x,
+    y,
+    alpha: 1,
+    dy: -1.2,
+    color
+  });
+}
+
+function updateFloatingTexts() {
+  for (let i = floatingTexts.length - 1; i >= 0; i--) {
+    const t = floatingTexts[i];
+    t.y += t.dy;
+    t.alpha -= 0.02;
+    if (t.alpha <= 0) {
+      floatingTexts.splice(i, 1);
+    }
+  }
+}
+
+function drawFloatingTexts() {
+  floatingTexts.forEach(t => {
+    ctx.save();
+    ctx.font = "bold 36px sans-serif";
+    ctx.fillStyle = t.color;
+    ctx.globalAlpha = t.alpha;
+
+    // Добавим лёгкую тень
+    ctx.shadowColor = "black";
+    ctx.shadowBlur = 4;
+
+    ctx.fillText(t.text, t.x, t.y);
+
+    // Сброс эффектов
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  });
+}
+
+function colorToRGB(color) {
+  const tempCanvas = document.createElement("canvas");
+  const tempCtx = tempCanvas.getContext("2d");
+  tempCtx.fillStyle = color;
+  const rgb = tempCtx.fillStyle.match(/\d+/g).slice(0, 3);
+  return rgb.join(",");
+}
 
 function spawnFirework(x, y) {
   for (let i = 0; i < 40; i++) {
@@ -271,6 +324,7 @@ function drawGoal() {
             const dy = ball.y - goalkeeper.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             if (distance < ball.radius + goalkeeper.radius) {
+			  spawnFloatingText("X", ball.x, ball.y, "#ff4444"); // красный
               ball.active = false;
               balls.splice(i, 1);
               continue;
@@ -282,8 +336,11 @@ function drawGoal() {
               ball.x < goal.x + goal.width
             ) {
 			  spawnFirework(ball.x, goal.y + goal.height / 2);
+			  const randX = goal.x + Math.random() * goal.width;
+			  const randY = Math.random() * canvas.height * 0.6; // верхняя часть экрана
+			  spawnFloatingText("+1", randX, randY, "rgb(255, 255, 255)");
               score += 1;
-              document.getElementById("score").textContent = "Score: " + score;
+              document.getElementById("score").textContent = "Tokens: " + score;
               ball.active = false;
               balls.splice(i, 1);
             } else if (ball.y + ball.radius < 0) {
@@ -296,6 +353,8 @@ function drawGoal() {
 
       function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+		drawFloatingTexts();
+		updateFloatingTexts();
 		drawFireworks();
 		updateFireworks();
         drawGoal();
