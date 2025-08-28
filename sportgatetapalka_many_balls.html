@@ -207,12 +207,33 @@ function drawFireworks() {
   });
 }
 
+function getRandomPlusColor() {
+  const colors = [
+    "rgb(255, 255, 255)", // белый
+    "rgb(255, 255, 0)",   // жёлтый
+    "rgb(0, 191, 255)",   // голубой
+    "rgb(144, 238, 144)"  // салатовый (light green)
+  ];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
 function hslToRgb(hslColor) {
   const tempCanvas = document.createElement("canvas");
   const tempCtx = tempCanvas.getContext("2d");
   tempCtx.fillStyle = hslColor;
   const rgb = tempCtx.fillStyle.match(/\d+/g).slice(0, 3);
   return rgb.join(",");
+}
+
+function drawFieldStripes() {
+  const stripeCount = 6; // количество полос
+  const stripeWidth = canvas.width / stripeCount;
+  const colors = ["#228B22", "#6DBE45"]; // обновлённые зелёные оттенки
+
+  for (let i = 0; i < stripeCount; i++) {
+    ctx.fillStyle = colors[i % 2];
+    ctx.fillRect(i * stripeWidth, 0, stripeWidth, canvas.height);
+  }
 }
 
 function drawGoal() {
@@ -336,9 +357,9 @@ function drawGoal() {
               ball.x < goal.x + goal.width
             ) {
 			  spawnFirework(ball.x, goal.y + goal.height / 2);
-			  const randX = goal.x + Math.random() * goal.width;
+			  const randX = goal.x + 20 + Math.random() * (goal.width - 40); // внутри ворот, с небольшим отступом
 			  const randY = Math.random() * canvas.height * 0.6; // верхняя часть экрана
-			  spawnFloatingText("+1", randX, randY, "rgb(255, 255, 255)");
+			  spawnFloatingText("+1", randX, randY, getRandomPlusColor());
               score += 1;
               document.getElementById("score").textContent = "Tokens: " + score;
               ball.active = false;
@@ -353,6 +374,7 @@ function drawGoal() {
 
       function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+		drawFieldStripes();
 		drawFloatingTexts();
 		updateFloatingTexts();
 		drawFireworks();
