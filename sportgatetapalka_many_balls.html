@@ -47,8 +47,8 @@
   </style>
 </head>
 <body>
-  <div id="title">SportGate.io</div>
-  <div id="score">Очки: 0</div>
+  <div id="title">Hi SportGate.io</div>
+  <div id="score">Tokens: 0</div>
   <canvas id="gameCanvas"></canvas>
 
   <script>
@@ -58,13 +58,14 @@
       const user = tg.initDataUnsafe.user;
       if (user) {
         const username = user.username || `${user.first_name} ${user.last_name || ''}`;
-        document.getElementById("title").textContent = `Привет, ${username}!`;
+        document.getElementById("title").textContent = `Hi ${username}!`;
       }
 	  
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
 
       let score = 0;
+	  const fireworks = [];
       const balls = [];
       const goal = {};
       const goalkeeper = {};
@@ -87,6 +88,7 @@
         goalkeeper.y = goal.y + goal.height + 10;
         goalkeeper.speedX = 1.5;
         goalkeeper.direction = 1;
+
       }
 
       window.addEventListener("resize", resizeCanvas);
@@ -105,6 +107,60 @@
 
       canvas.addEventListener("click", spawnBall);
       canvas.addEventListener("touchstart", spawnBall);
+
+function spawnFirework(x, y) {
+  for (let i = 0; i < 40; i++) {
+    fireworks.push({
+      x: x,
+      y: y,
+      radius: 2 + Math.random() * 3,
+      angle: Math.random() * 2 * Math.PI,
+      speed: 2 + Math.random() * 4,
+      alpha: 1,
+      color: getBrightColor()
+    });
+  }
+}
+
+function getBrightColor() {
+  const colors = [
+    "rgb(255, 255, 255)", // белый
+    "rgb(255, 255, 0)",   // жёлтый
+    "rgb(0, 191, 255)",   // голубой
+    "rgb(255, 105, 180)", // розовый
+    "rgb(0, 255, 0)"      // зелёный
+  ];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
+function updateFireworks() {
+  for (let i = fireworks.length - 1; i >= 0; i--) {
+    const p = fireworks[i];
+    p.x += Math.cos(p.angle) * p.speed;
+    p.y += Math.sin(p.angle) * p.speed;
+    p.alpha -= 0.02;
+    if (p.alpha <= 0) {
+      fireworks.splice(i, 1);
+    }
+  }
+}
+
+function drawFireworks() {
+  fireworks.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+    ctx.fillStyle = `${p.color.replace("rgb", "rgba").replace(")", `, ${p.alpha})`)}`;
+    ctx.fill();
+  });
+}
+
+function hslToRgb(hslColor) {
+  const tempCanvas = document.createElement("canvas");
+  const tempCtx = tempCanvas.getContext("2d");
+  tempCtx.fillStyle = hslColor;
+  const rgb = tempCtx.fillStyle.match(/\d+/g).slice(0, 3);
+  return rgb.join(",");
+}
 
 function drawGoal() {
   const postWidth = 10;
@@ -138,7 +194,7 @@ function drawGoal() {
   // Обводка ворот (нижняя часть)
   ctx.strokeStyle = "white";
   ctx.lineWidth = 2;
-  ctx.strokeRect(goal.x, goal.y, goal.width, goal.height);
+  ctx.strokeRect(goal.x+1, goal.y, goal.width-2, goal.height);
 }
       function drawGoalkeeper() {
 	    // Тело — вертикальный овал
@@ -158,6 +214,7 @@ function drawGoal() {
         ctx.fillStyle = "red";
         ctx.arc(goalkeeper.x, goalkeeper.y, goalkeeper.radius, 0, Math.PI * 2);
         ctx.fill();
+
       }
 
       function updateGoalkeeper() {
@@ -195,9 +252,11 @@ function drawGoal() {
         ctx.stroke();
 
         ctx.fillStyle = "black";
+		
         drawHexagon(ctx, -7, -7, 6);
         drawHexagon(ctx, 8, -5, 6);
         drawHexagon(ctx, 0, 9, 6);
+
         ctx.restore();
       }
 
@@ -222,8 +281,9 @@ function drawGoal() {
               ball.x > goal.x &&
               ball.x < goal.x + goal.width
             ) {
+			  spawnFirework(ball.x, goal.y + goal.height / 2);
               score += 1;
-              document.getElementById("score").textContent = "Очки: " + score;
+              document.getElementById("score").textContent = "Score: " + score;
               ball.active = false;
               balls.splice(i, 1);
             } else if (ball.y + ball.radius < 0) {
@@ -236,6 +296,8 @@ function drawGoal() {
 
       function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+		drawFireworks();
+		updateFireworks();
         drawGoal();
         drawGoalkeeper();
         balls.forEach(drawBall);
@@ -249,4 +311,3 @@ function drawGoal() {
   </script>
 </body>
 </html>
-
