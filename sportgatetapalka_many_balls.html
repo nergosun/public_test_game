@@ -51,6 +51,11 @@
   <div id="score">Tokens: 0</div>
   <canvas id="gameCanvas"></canvas>
 
+  <!-- Тег audio для звука гола -->
+  <audio id="goalSound" preload="auto">
+    <source src="goal_sound.mp3" type="audio/mpeg">
+  </audio>
+
   <script>
     window.onload = () => {
       const tg = window.Telegram.WebApp;
@@ -63,6 +68,7 @@
 	  
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
+	  const goalSound = document.getElementById('goalSound');
 
 	  // Обработчики тача
 	  canvas.addEventListener("touchstart", () => {
@@ -114,6 +120,16 @@
 
       window.addEventListener("resize", resizeCanvas);
       resizeCanvas();
+
+function playGoalSound() {
+    // Сбрасываем звук на начало на случай, если он уже проигрывается
+    goalSound.currentTime = 0; 
+    // Воспроизводим звук
+    goalSound.play().catch(error => {
+      // Ловим возможные ошибки (например, если пользователь ещё не взаимодействовал со страницей)
+      console.log("Could not play this sound:", error);
+    });
+  }
 
       function spawnBall() {
         balls.push({
@@ -445,6 +461,7 @@ function drawGoalkeeper() {
               ball.x > goal.x &&
               ball.x < goal.x + goal.width
             ) {
+			  playGoalSound();
 			  spawnFirework(ball.x, goal.y + goal.height / 2);
 			  const randX = goal.x + 20 + Math.random() * (goal.width - 40); // внутри ворот, с небольшим отступом
 			  const randY = Math.random() * canvas.height * 0.6; // верхняя часть экрана
