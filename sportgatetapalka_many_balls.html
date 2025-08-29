@@ -142,14 +142,20 @@ soundButton.addEventListener('click', () => {
 
 // Функции воспроизведения
 function playGoalSound() {
-  if (soundsEnabled) {
+  const now = Date.now();
+  
+  if (soundsEnabled && goalSound && now - lastGoalSoundTime > GOAL_SOUND_COOLDOWN) {
     goalSound.play();
+	lastGoalSoundTime = now;
   }
 }
 
 function playSaveSound() {
-  if (soundsEnabled) {
+  const now = Date.now();
+  
+  if (soundsEnabled && saveSound && now - lastSaveSoundTime > SAVE_SOUND_COOLDOWN) {
     saveSound.play();
+	lastSaveSoundTime = now;
   }
 }
 
@@ -163,6 +169,13 @@ function playSaveSound() {
 	    lastTouchTime = Date.now();
 	    showIdleCircle = false;
 	  });
+
+	  // --- СИСТЕМА ЗАДЕРЖКИ ЗВУКОВ С РАЗДЕЛЬНЫМИ НАСТРОЙКАМИ ---
+	  let lastGoalSoundTime = 0;
+	  let lastSaveSoundTime = 0;
+	  const GOAL_SOUND_COOLDOWN = 100; // 0.1 секунды для гола
+	  const SAVE_SOUND_COOLDOWN = 100; // 0.15 секунды для сейва
+
 
       let score = 0;
 	  let idlePulse = 0;
