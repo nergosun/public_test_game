@@ -3,6 +3,7 @@
 <head>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <meta charset="UTF-8">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
   <title>SportGate Tap Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
@@ -44,22 +45,30 @@
       left: 0;
       display: block;
     }
+	
+	#soundButton {
+      position: absolute;
+      top: 80px;
+      right: 20px;
+      z-index: 100;
+      padding: 8px 15px;
+      background: rgba(255, 255, 255, 0.9);
+      border: none;
+      border-radius: 20px;
+      font-weight: bold;
+      color: #008000;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
   </style>
 </head>
 <body>
   <div id="title">Player SportGate.io</div>
   <div id="score">Tokens: 0</div>
   <canvas id="gameCanvas"></canvas>
-
-  <!-- Тег audio для звука гола -->
-  <audio id="goalSound" preload="auto">
-    <source src="goal_sound.mp3" type="audio/mpeg">
-  </audio>
-  
-    <!-- Тег audio для звука сейва -->
-  <audio id="saveSound" preload="auto">
-    <source src="save_sound.mp3" type="audio/mpeg">
-  </audio>
+  <button id="soundButton">Включить звук</button>
 
   <script>
     window.onload = () => {
@@ -74,8 +83,41 @@
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
 	  
-	  const goalSound = document.getElementById('goalSound');
-	  const saveSound = document.getElementById('saveSound');
+      // --- HOWLER.JS АУДИО СИСТЕМА ---
+      let soundsEnabled = false;
+      let goalSound, saveSound;
+      
+      // Кнопка активации звука
+      const soundButton = document.getElementById('soundButton');
+      
+      soundButton.addEventListener('click', () => {
+        soundsEnabled = true;
+        
+        // Инициализируем звук гола
+        goalSound = new Howl({
+          src: ['goal_sound.mp3'],
+          preload: true,
+          volume: 0.7,
+          html5: true // Важно для мобильных устройств
+        });
+        
+        // Инициализируем звук сейва
+        saveSound = new Howl({
+          src: ['save_sound.mp3'],
+          preload: true,
+          volume: 0.7,
+          html5: true
+        });
+        
+        // Меняем текст кнопки и скрываем через 2 секунды
+        soundButton.textContent = 'Звук включен';
+        setTimeout(() => {
+          soundButton.style.display = 'none';
+        }, 2000);
+        
+        console.log("Звуковая система активирована");
+      });
+
 
 	  // Обработчики тача
 	  canvas.addEventListener("touchstart", () => {
@@ -128,26 +170,18 @@
       window.addEventListener("resize", resizeCanvas);
       resizeCanvas();
 
-//Функция воспроизведения звуков
-function playSound(soundElement) {
-  try {
-    soundElement.currentTime = 0; // Перематываем на начало
-    soundElement.play().catch(error => {
-      console.log("Не удалось воспроизвести звук:", error);
-    });
-  } catch (error) {
-    console.log("Ошибка воспроизведения звука:", error);
-  }
-}
-
-// Функции для конкретных звуков
-function playGoalSound() {
-  playSound(goalSound);
-}
-
-function playSaveSound() {
-  playSound(saveSound);
-}
+      // Функции воспроизведения
+      function playGoalSound() {
+        if (soundsEnabled && goalSound) {
+          goalSound.play();
+        }
+      }
+      
+      function playSaveSound() {
+        if (soundsEnabled && saveSound) {
+          saveSound.play();
+        }
+      }
 
 // Принудительно запускаем загрузку звуков
 function preloadSounds() {
@@ -570,6 +604,37 @@ function drawGoalkeeper() {
         }
       }
 
+soundButton.addEventListener('click', () => {
+  soundsEnabled = true;
+  
+  goalSound = new Howl({
+    src: ['goal_sound.mp3'],
+    preload: true,
+    volume: 0.7,
+    html5: true
+  });
+  
+  saveSound = new Howl({
+    src: ['save_sound.mp3'], 
+    preload: true,
+    volume: 0.7,
+    html5: true
+  });
+  
+  // Предварительно воспроизводим и сразу останавливаем
+  // чтобы избежать задержки при первом реальном воспроизведении
+  setTimeout(() => {
+    const id = goalSound.play();
+    goalSound.stop(id);
+    
+    const id2 = saveSound.play();
+    saveSound.stop(id2);
+  }, 100);
+  
+  soundButton.textContent = 'Звук включен';
+  setTimeout(() => { soundButton.style.display = 'none'; }, 2000);
+});
+
       function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 		drawFieldStripes();
@@ -615,4 +680,3 @@ function drawGoalkeeper() {
   </script>
 </body>
 </html>
-
