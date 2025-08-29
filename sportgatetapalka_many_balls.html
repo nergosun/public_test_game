@@ -55,6 +55,11 @@
   <audio id="goalSound" preload="auto">
     <source src="goal_sound.mp3" type="audio/mpeg">
   </audio>
+  
+    <!-- Тег audio для звука сейва -->
+  <audio id="saveSound" preload="auto">
+    <source src="save_sound.mp3" type="audio/mpeg">
+  </audio>
 
   <script>
     window.onload = () => {
@@ -70,13 +75,7 @@
       const ctx = canvas.getContext("2d");
 	  
 	  const goalSound = document.getElementById('goalSound');
-	  let soundReady = false;
-	  
-	  // Ожидание готовности звука
-	  goalSound.addEventListener('canplaythrough', () => {
-	    soundReady = true;
-	  });
-
+	  const saveSound = document.getElementById('saveSound');
 
 	  // Обработчики тача
 	  canvas.addEventListener("touchstart", () => {
@@ -129,38 +128,101 @@
       window.addEventListener("resize", resizeCanvas);
       resizeCanvas();
 
-  function playGoalSound() {
-    if (!soundReady) return;
-    
-    try {
-      // Быстро перематываем на начало
-      goalSound.currentTime = 0;
-      
-      // Воспроизводим с небольшой задержкой для надежности
-      setTimeout(() => {
-        goalSound.play().catch(error => {
-          console.log("Не удалось воспроизвести звук:", error);
-        });
-      }, 50);
-      
-    } catch (error) {
-      console.log("Ошибка воспроизведения звука:", error);
-    }
+// Простая функция воспроизведения звука
+function playSound(soundElement) {
+  try {
+    soundElement.currentTime = 0; // Перематываем на начало
+    soundElement.play().catch(error => {
+      console.log("Не удалось воспроизвести звук:", error);
+    });
+  } catch (error) {
+    console.log("Ошибка воспроизведения звука:", error);
   }
+}
 
-      function spawnBall() {
-        balls.push({
-          x: canvas.width / 2,
-          y: canvas.height - 50,
-          radius: 20,
-          speedY: -10,
-          angle: 0,
-          active: true
-        });
-      }
+// Функции для конкретных звуков
+function playGoalSound() {
+  playSound(goalSound);
+}
 
-      canvas.addEventListener("click", spawnBall);
-      canvas.addEventListener("touchstart", spawnBall);
+function playSaveSound() {
+  playSound(saveSound);
+}
+
+// Принудительно запускаем загрузку звуков
+function preloadSounds() {
+  try {
+    // Создаем небольшой контекст для предзагрузки
+    goalSound.volume = 0;
+    saveSound.volume = 0;
+    
+    goalSound.play().then(() => {
+      goalSound.pause();
+      goalSound.currentTime = 0;
+      goalSound.volume = 1;
+      console.log("Goal sound preloaded");
+    }).catch(e => console.log("Goal preload error:", e));
+    
+    saveSound.play().then(() => {
+      saveSound.pause();
+      saveSound.currentTime = 0;
+      saveSound.volume = 1;
+      console.log("Save sound preloaded");
+    }).catch(e => console.log("Save preload error:", e));
+    
+  } catch (error) {
+    console.log("Preload error:", error);
+  }
+}
+
+// Вызываем предзагрузку
+setTimeout(preloadSounds, 1000); // Даем странице немного времени на загрузку
+
+function spawnBall(event) {
+  // Получаем координаты нажатия
+  let clientX, clientY;
+  
+  if (event.type === 'touchstart') {
+    clientX = event.touches[0].clientX;
+    clientY = event.touches[0].clientY;
+  } else {
+    clientX = event.clientX;
+    clientY = event.clientY;
+  }
+  
+  // Ограничиваем точку выстрела нижней частью экрана (ниже центра)
+  const minY = canvas.height * 0.7; // 70% от высоты экрана
+  const spawnY = Math.max(clientY, minY);
+  
+  // Ограничиваем точку выстрела шириной ворот
+  const minX = goal.x + 20; // немного отступаем от края ворот
+  const maxX = goal.x + goal.width - 20;
+  const spawnX = Math.min(Math.max(clientX, minX), maxX);
+  
+  // Создаем мяч в ограниченных координатах
+  balls.push({
+    x: spawnX,
+    y: spawnY,
+    radius: 20,
+    speedY: -10,
+    angle: 0,
+    active: true
+  });
+}
+
+canvas.addEventListener("click", function(event) {
+  event.preventDefault();
+  spawnBall(event);
+  lastTouchTime = Date.now();
+  showIdleCircle = false;
+});
+
+canvas.addEventListener("touchstart", function(event) {
+  event.preventDefault();
+  spawnBall(event);
+  lastTouchTime = Date.now();
+  showIdleCircle = false;
+});
 
 function spawnFloatingText(text, x, y, color = "white") {
   floatingTexts.push({
@@ -476,6 +538,7 @@ function drawGoalkeeper() {
             const dy = ball.y - goalkeeper.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             if (distance < ball.radius + goalkeeper.radius) {
+			  playSaveSound();
 			  const randX = goal.x + 20 + Math.random() * (goal.width - 40); // внутри ширины ворот
 			  const randY = goal.y + goal.height + 30; 
 			  spawnFloatingText("X", randX, randY, "#ff4444"); // красный
