@@ -227,8 +227,8 @@ function updateFlameParticles() {
     
     particle.x += Math.cos(particle.angle) * particle.speed;
     particle.y += Math.sin(particle.angle) * particle.speed;
-    particle.life -= 0.05;
-    particle.size -= 0.2;
+    particle.life -= 0.06; // время исчезновения
+    particle.size -= 0.15;
     
     if (particle.life <= 0 || particle.size <= 0) {
       flameParticles.splice(i, 1);
@@ -240,17 +240,10 @@ function updateFlameParticles() {
 function drawFlameParticles() {
   flameParticles.forEach(particle => {
     ctx.save();
-    ctx.globalAlpha = particle.life;
+    ctx.globalAlpha = particle.life * 0.7;
     
     // Градиент для пламени
-    const gradient = ctx.createRadialGradient(
-      particle.x, particle.y, 0,
-      particle.x, particle.y, particle.size
-    );
-    gradient.addColorStop(0, particle.color);
-    gradient.addColorStop(1, 'transparent');
-    
-    ctx.fillStyle = gradient;
+ctx.fillStyle = particle.color;
     ctx.beginPath();
     ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
     ctx.fill();
@@ -611,48 +604,25 @@ function drawGoalkeeper() {
       }
 
 function drawBall(ball) {
-  // Создаем частицы пламени для этого мяча
-  if (ball.active && ball.speedY < 0) { // Только когда мяч летит вверх
+  // Создаем частицы следа (ОСТАВЛЯЕМ)
+  if (ball.active && ball.speedY < 0) {
     createFlameParticles(ball);
   }
   
-  // Рисуем основное пламя вокруг мяча
+  // Рисуем обычный мяч БЕЗ пламени вокруг (УБИРАЕМ пламя)
   ctx.save();
   ctx.translate(ball.x, ball.y);
-  
-  // Большое пламя вокруг мяча
-  const flameGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, ball.radius * 1.5);
-  flameGradient.addColorStop(0, 'rgba(255, 100, 0, 0.8)');
-  flameGradient.addColorStop(0.5, 'rgba(255, 200, 0, 0.4)');
-  flameGradient.addColorStop(1, 'transparent');
-  
-  ctx.fillStyle = flameGradient;
-  ctx.beginPath();
-  ctx.arc(0, 0, ball.radius * 1.5, 0, Math.PI * 2);
-  ctx.fill();
-  
-  // Яркое ядро пламени
-  const coreGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, ball.radius);
-  coreGradient.addColorStop(0, '#FFFFFF');
-  coreGradient.addColorStop(0.3, '#FFFF00');
-  coreGradient.addColorStop(1, 'transparent');
-  
-  ctx.fillStyle = coreGradient;
-  ctx.beginPath();
-  ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
-  ctx.fill();
-  
-  // Сам мяч (белый шар)
   ctx.rotate(ball.angle);
+  
+  // Просто мяч без каких-либо эффектов пламени
   ctx.beginPath();
   ctx.fillStyle = "white";
-  ctx.arc(0, 0, ball.radius * 0.9, 0, Math.PI * 2); // Чуть меньше чтобы видеть пламя
+  ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
   ctx.fill();
   ctx.strokeStyle = "black";
   ctx.stroke();
 
-  // Узоры на мяче (видны через пламя)
-  ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+  ctx.fillStyle = "black";
   drawHexagon(ctx, -7, -7, 6);
   drawHexagon(ctx, 8, -5, 6);
   drawHexagon(ctx, 0, 9, 6);
