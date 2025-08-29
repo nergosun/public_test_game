@@ -178,6 +178,10 @@ function playSaveSound() {
       const balls = [];
       const goal = {};
       const goalkeeper = {};
+	  
+	  const MAX_FIREWORKS = 20; // Максимальное количество фейерверков
+	  const MAX_FLAME_PARTICLES = 30; // Максимальное количество частиц пламени
+	  const MAX_FLOATING_TEXTS = 15; // Максимальное количество текстов
 
       function resizeCanvas() {
         canvas.width = document.documentElement.clientWidth;
@@ -207,6 +211,12 @@ function playSaveSound() {
 
 // Функция для создания частиц пламени
 function createFlameParticles(ball) {
+
+  // Проверяем лимит частиц пламяни
+  if (flameParticles.length >= MAX_FLAME_PARTICLES) {
+    return;
+  }
+
   for (let i = 0; i < 1; i++) { // Создаем 3 частицы за кадр
     flameParticles.push({
       x: ball.x + Math.random() * 10 - 5,
@@ -227,7 +237,7 @@ function updateFlameParticles() {
     
     particle.x += Math.cos(particle.angle) * particle.speed;
     particle.y += Math.sin(particle.angle) * particle.speed;
-    particle.life -= 0.06; // время исчезновения
+    particle.life -= 0.08; // время исчезновения
     particle.size -= 0.15;
     
     if (particle.life <= 0 || particle.size <= 0) {
@@ -299,12 +309,18 @@ canvas.addEventListener("touchstart", function(event) {
 });
 
 function spawnFloatingText(text, x, y, color = "white") {
+  // Проверяем лимит
+  if (floatingTexts.length >= MAX_FLOATING_TEXTS) {
+    // Удаляем самый старый текст если достигли лимита
+    floatingTexts.shift();
+  }
+
   floatingTexts.push({
     text,
     x,
     y,
     alpha: 1,
-    dy: -1.2,
+    dy: -1.5, // скорость движения частиц текста
     color
   });
 }
@@ -313,7 +329,7 @@ function updateFloatingTexts() {
   for (let i = floatingTexts.length - 1; i >= 0; i--) {
     const t = floatingTexts[i];
     t.y += t.dy;
-    t.alpha -= 0.02;
+    t.alpha -= 0.03; // скорость исчезновения частиц текста
     if (t.alpha <= 0) {
       floatingTexts.splice(i, 1);
     }
@@ -349,7 +365,12 @@ function colorToRGB(color) {
 }
 
 function spawnFirework(x, y) {
-  for (let i = 0; i < 40; i++) {
+  // Проверяем, не превысили ли лимит
+  if (fireworks.length >= MAX_FIREWORKS) {
+    return; // Не создаем новый фейерверк
+  }
+
+  for (let i = 0; i < 20; i++) { // Количество частиц в фейерверке
     fireworks.push({
       x: x,
       y: y,
@@ -378,7 +399,7 @@ function updateFireworks() {
     const p = fireworks[i];
     p.x += Math.cos(p.angle) * p.speed;
     p.y += Math.sin(p.angle) * p.speed;
-    p.alpha -= 0.02;
+    p.alpha -= 0.03; // время исчезновения фейерверков
     if (p.alpha <= 0) {
       fireworks.splice(i, 1);
     }
