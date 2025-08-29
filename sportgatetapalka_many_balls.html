@@ -90,20 +90,28 @@
 
 // --- HOWLER.JS АУДИО СИСТЕМА С ПЕРЕКЛЮЧАТЕЛЕМ ---
 let soundsEnabled = false;
-let goalSound, saveSound;
+let goalSound, saveSound, backgroundMusic;
 
 // Инициализируем звуки сразу
 goalSound = new Howl({
-  src: ['goal_sound.mp3'],
+  src: ['goal_sound.ogg'],
   preload: true,
-  volume: 0.7,
+  volume: 0.4,
   html5: true
 });
 
 saveSound = new Howl({
-  src: ['save_sound.mp3'],
+  src: ['save_sound.ogg'],
   preload: true, 
-  volume: 0.7,
+  volume: 0.4,
+  html5: true
+});
+
+backgroundMusic = new Howl({
+  src: ['background_music.ogg'], // OGG формат
+  preload: true,
+  volume: 0.6, // музыка тише эффектов
+  loop: true,
   html5: true
 });
 
@@ -111,7 +119,7 @@ Howler.mute(true);
 
 // Кнопка переключатель
 const soundButton = document.getElementById('soundButton');
-soundButton.textContent = '🔇 Sound';
+soundButton.textContent = '🔇';
 
 // Обработчик переключения звука
 soundButton.addEventListener('click', () => {
@@ -119,10 +127,16 @@ soundButton.addEventListener('click', () => {
   
   if (soundsEnabled) {
     Howler.mute(false);
-    soundButton.textContent = '🔊 Sound';
+    soundButton.textContent = '🔊';
+	
+	// Если музыка еще не играет, запускаем ее
+    if (!backgroundMusic.playing()) {
+      backgroundMusic.play();
+    }
+
   } else {
     Howler.mute(true);
-    soundButton.textContent = '🔇 Sound';
+    soundButton.textContent = '🔇';
   }
 });
 
