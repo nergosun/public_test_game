@@ -45,28 +45,28 @@
       left: 0;
       display: block;
     }
-    
-    #soundButton {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      z-index: 100;
-      padding: 8px 15px;
-      background: linear-gradient(145deg, #2E8B57, #3CB371);
-      border: 2px solid #FFFFFF;
-      border-radius: 25px;
-      font-weight: bold;
-      color: white;
-      font-size: 14px;
-      cursor: pointer;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-      transition: all 0.3s ease;
-    }
+	
+#soundButton {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 100;
+  padding: 8px 15px;
+  background: linear-gradient(145deg, #2E8B57, #3CB371);
+  border: 2px solid #FFFFFF;
+  border-radius: 25px;
+  font-weight: bold;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
 
-    #soundButton:hover {
-      transform: scale(1.05);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
-    }
+#soundButton:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
   </style>
 </head>
 <body>
@@ -76,136 +76,156 @@
   <button id="soundButton">Sound</button>
 
   <script>
-    // Глобальные переменные для системы сохранения
-    let gameUsername = 'guest';
-
     window.onload = () => {
       const tg = window.Telegram.WebApp;
-      tg.ready();
+      tg.ready(); // Инициализация WebApp
       const user = tg.initDataUnsafe.user;
-      
-      // Заполняем gameUsername
       if (user) {
-        gameUsername = user.username;
-        const displayName = user.username;
-        document.getElementById("title").textContent = `Player: ${displayName}`;
-        
-        // Загрузка счета
-        getPlayerScore(gameUsername).then(savedScore => {
-          score = savedScore;
-          document.getElementById("score").textContent = "Tokens: " + score;
-        }).catch(error => {
-          console.log('Error loading score:', error);
-          score = 0;
-          document.getElementById("score").textContent = "Tokens: 0";
-        });
-      } else {
-        gameUsername = 'guest';
-        score = 0;
-        document.getElementById("score").textContent = "Tokens: 0";
+        const username = user.username;
+        document.getElementById("title").textContent = `Player: ${username}`;
+		
+		loadScoreFromServer(function(savedScore) {
+			score = savedScore;
+			document.getElementById("score").textContent = "Tokens: " + score;
+		});
       }
-
+	  
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
 
-      // --- HOWLER.JS АУДИО СИСТЕМА ---
-      let soundsEnabled = false;
-      let goalSound, saveSound, backgroundMusic;
+// --- HOWLER.JS АУДИО СИСТЕМА С ПЕРЕКЛЮЧАТЕЛЕМ ---
+let soundsEnabled = false;
+let goalSound, saveSound, backgroundMusic;
 
-      goalSound = new Howl({
-        src: ['goal_sound.ogg'],
-        preload: true,
-        volume: 0.4,
-        html5: true
-      });
+// Инициализируем звуки сразу
+goalSound = new Howl({
+  src: ['goal_sound.ogg'],
+  preload: true,
+  volume: 0.4,
+  html5: true
+});
 
-      saveSound = new Howl({
-        src: ['save_sound.ogg'],
-        preload: true, 
-        volume: 0.4,
-        html5: true
-      });
+saveSound = new Howl({
+  src: ['save_sound.ogg'],
+  preload: true, 
+  volume: 0.4,
+  html5: true
+});
 
-      backgroundMusic = new Howl({
-        src: ['background_music.ogg'],
-        preload: true,
-        volume: 0.6,
-        loop: true,
-        html5: true
-      });
+backgroundMusic = new Howl({
+  src: ['background_music.ogg'], // OGG формат
+  preload: true,
+  volume: 0.6, // музыка тише эффектов
+  loop: true,
+  html5: true
+});
 
-      Howler.mute(true);
+Howler.mute(true);
 
-      const soundButton = document.getElementById('soundButton');
-      soundButton.textContent = '🔇';
+// Кнопка переключатель
+const soundButton = document.getElementById('soundButton');
+soundButton.textContent = '🔇';
 
-      soundButton.addEventListener('click', () => {
-        soundsEnabled = !soundsEnabled;
-        
-        if (soundsEnabled) {
-          Howler.mute(false);
-          soundButton.textContent = '🔊';
-          if (!backgroundMusic.playing()) {
-            backgroundMusic.play();
-          }
-        } else {
-          Howler.mute(true);
-          soundButton.textContent = '🔇';
-        }
-      });
+// Обработчик переключения звука
+soundButton.addEventListener('click', () => {
+  soundsEnabled = !soundsEnabled;
+  
+  if (soundsEnabled) {
+    Howler.mute(false);
+    soundButton.textContent = '🔊';
+	
+	// Если музыка еще не играет, запускаем ее
+    if (!backgroundMusic.playing()) {
+      backgroundMusic.play();
+    }
 
-      // --- СИСТЕМА ЗАДЕРЖКИ ЗВУКОВ ---
-      let lastGoalSoundTime = 0;
-      let lastSaveSoundTime = 0;
-      const GOAL_SOUND_COOLDOWN = 100;
-      const SAVE_SOUND_COOLDOWN = 100;
+  } else {
+    Howler.mute(true);
+    soundButton.textContent = '🔇';
+  }
+});
 
-      function playGoalSound() {
-        const now = Date.now();
-        if (soundsEnabled && goalSound && now - lastGoalSoundTime > GOAL_SOUND_COOLDOWN) {
-          goalSound.play();
-          lastGoalSoundTime = now;
-        }
-      }
+// API функции
+// Сохраняем счет (просто отправляем запрос)
+function saveScoreToServer(score) {
+  if (!gameUsername || gameUsername === 'guest') return;
+  
+  // Просто отправляем и забываем
+  fetch(`${API_BASE_URL}/balance/${gameUsername}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount: score })
+  }).catch(() => {}); // Игнорируем все ошибки
+}
 
-      function playSaveSound() {
-        const now = Date.now();
-        if (soundsEnabled && saveSound && now - lastSaveSoundTime > SAVE_SOUND_COOLDOWN) {
-          saveSound.play();
-          lastSaveSoundTime = now;
-        }
-      }
+// Получаем счет один раз при запуске
+function loadScoreFromServer(callback) {
+  if (!gameUsername || gameUsername === 'guest') {
+    callback(0);
+    return;
+  }
+  
+  fetch(`${API_BASE_URL}/balance/${gameUsername}`)
+    .then(response => response.json())
+    .then(data => callback(data.balance || 0))
+    .catch(() => callback(0));
+}
 
-      // Обработчики событий
-      canvas.addEventListener("touchstart", () => {
-        lastTouchTime = Date.now();
-        showIdleCircle = false;
-      });
-      
-      canvas.addEventListener("mousedown", () => {
-        lastTouchTime = Date.now();
-        showIdleCircle = false;
-      });
+// Функции воспроизведения
+function playGoalSound() {
+  const now = Date.now();
+  
+  if (soundsEnabled && goalSound && now - lastGoalSoundTime > GOAL_SOUND_COOLDOWN) {
+    goalSound.play();
+	lastGoalSoundTime = now;
+  }
+}
 
-      // Основные переменные игры
+function playSaveSound() {
+  const now = Date.now();
+  
+  if (soundsEnabled && saveSound && now - lastSaveSoundTime > SAVE_SOUND_COOLDOWN) {
+    saveSound.play();
+	lastSaveSoundTime = now;
+  }
+}
+
+	  // Обработчики тача
+	  canvas.addEventListener("touchstart", () => {
+	    lastTouchTime = Date.now();
+	    showIdleCircle = false;
+	  });
+	  
+	  canvas.addEventListener("mousedown", () => {
+	    lastTouchTime = Date.now();
+	    showIdleCircle = false;
+	  });
+
+	  // --- СИСТЕМА ЗАДЕРЖКИ ЗВУКОВ С РАЗДЕЛЬНЫМИ НАСТРОЙКАМИ ---
+	  let lastGoalSoundTime = 0;
+	  let lastSaveSoundTime = 0;
+	  const GOAL_SOUND_COOLDOWN = 100; // 0.1 секунды для гола
+	  const SAVE_SOUND_COOLDOWN = 100; // 0.15 секунды для сейва
+
+
       let score = 0;
-      let idlePulse = 0;
-      let jumpOffset = 0;
-      let armOffset = 0;
-      let legOffset = 0;
-      let sadTimer = 0;
-      let lastTouchTime = Date.now();
-      let showIdleCircle = false;
-      const flameParticles = [];
-      const floatingTexts = [];
-      const fireworks = [];
+	  let idlePulse = 0;
+	  let jumpOffset = 0;
+	  let armOffset = 0;
+	  let legOffset = 0;
+	  let sadTimer = 0
+	  let lastTouchTime = Date.now();
+	  let showIdleCircle = false;
+	  const flameParticles = [];
+	  const floatingTexts = [];
+	  const fireworks = [];
       const balls = [];
       const goal = {};
       const goalkeeper = {};
-      
-      const MAX_FIREWORKS = 20;
-      const MAX_FLAME_PARTICLES = 30;
-      const MAX_FLOATING_TEXTS = 15;
+	  
+	  const MAX_FIREWORKS = 20; // Максимальное количество фейерверков
+	  const MAX_FLAME_PARTICLES = 30; // Максимальное количество частиц пламени
+	  const MAX_FLOATING_TEXTS = 15; // Максимальное количество текстов
 
       function resizeCanvas() {
         canvas.width = document.documentElement.clientWidth;
@@ -232,50 +252,6 @@
 
       window.addEventListener("resize", resizeCanvas);
       resizeCanvas();
-
-// === ДОБАВЛЯЕМ ЭТИ ФУНКЦИИ ДЛЯ РАБОТЫ С API ===
-// Функция получения счета
-async function getPlayerScore(username) {
-  try {
-    const response = await fetch(`http://45.14.49.71:3000/balance/${username}`);
-    
-    // Таймаут для мобильных устройств
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Timeout')), 5000)
-    );
-    
-    const data = await Promise.race([response.json(), timeoutPromise]);
-    
-    if (response.status === 404) return 0;
-    return data.balance || 0;
-  } catch (error) {
-    console.log('Error getting score:', error);
-    return 0; // Всегда возвращаем 0 при ошибке
-  }
-}
-
-// Функция сохранения счета
-async function setPlayerScore(username, score) {
-  try {
-    // Таймаут для предотвращения зависаний
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    
-    await fetch(`http://45.14.49.71:3000/balance/${username}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: score }),
-      signal: controller.signal
-    });
-    
-    clearTimeout(timeoutId);
-    console.log('Score saved successfully');
-  } catch (error) {
-    console.log('Error saving score:', error);
-    // Не бросаем ошибку дальше
-  }
-}
-
 
 // Функция для создания частиц пламени
 function createFlameParticles(ball) {
@@ -730,26 +706,29 @@ function drawBall(ball) {
             const dy = ball.y - goalkeeper.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             if (distance < ball.radius + goalkeeper.radius) {
-              playSaveSound();
-              const randX = goal.x + 20 + Math.random() * (goal.width - 40);
-              const randY = goal.y + goal.height + 30; 
-              spawnFloatingText("X", randX, randY, "#ff4444");
+			  playSaveSound();
+			  const randX = goal.x + 20 + Math.random() * (goal.width - 40); // внутри ширины ворот
+			  const randY = goal.y + goal.height + 30; 
+			  spawnFloatingText("X", randX, randY, "#ff4444"); // красный
               ball.active = false;
               balls.splice(i, 1);
               continue;
             }
 
-            if (ball.y - ball.radius < goal.y + goal.height &&
-                ball.x > goal.x && ball.x < goal.x + goal.width) {
-              playGoalSound();
-              spawnFirework(ball.x, goal.y + goal.height / 2);
-              const randX = goal.x + 20 + Math.random() * (goal.width - 40);
-              const randY = Math.random() * canvas.height * 0.6;
-              spawnFloatingText("+1", randX, randY, getRandomPlusColor());
-              sadTimer = 15;
+            if (
+              ball.y - ball.radius < goal.y + goal.height &&
+              ball.x > goal.x &&
+              ball.x < goal.x + goal.width
+            ) {
+			  playGoalSound();
+			  spawnFirework(ball.x, goal.y + goal.height / 2);
+			  const randX = goal.x + 20 + Math.random() * (goal.width - 40); // внутри ворот, с небольшим отступом
+			  const randY = Math.random() * canvas.height * 0.6; // верхняя часть экрана
+			  spawnFloatingText("+1", randX, randY, getRandomPlusColor());
+			  sadTimer = 60; // грустит 60 кадров
               score += 1;
               document.getElementById("score").textContent = "Tokens: " + score;
-              scheduleScoreSave();
+			  saveScoreToServer(score);
               ball.active = false;
               balls.splice(i, 1);
             } else if (ball.y + ball.radius < 0) {
@@ -762,46 +741,46 @@ function drawBall(ball) {
 
       function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawFieldStripes();
-        updateFlameParticles();
-        drawFlameParticles();
-        drawFloatingTexts();
-        updateFloatingTexts();
-        drawFireworks();
-        updateFireworks();
+		drawFieldStripes();
+		updateFlameParticles();
+		drawFlameParticles();
+		drawFloatingTexts();
+		updateFloatingTexts();
+		drawFireworks();
+		updateFireworks();
         drawGoal();
         drawGoalkeeper();
         balls.forEach(drawBall);
         updateBalls();
         updateGoalkeeper();
-        
-        // Проверка сохранения
-        const now = Date.now();
-        
-        if (Date.now() - lastTouchTime > 3000) {
-          showIdlePrompt = true;
-        } else {
-          showIdlePrompt = false;
-        }
-        
-        idlePulse = Math.sin(Date.now() / 500) * 0.3 + 0.7;
-        
-        if (showIdlePrompt) {
-          ctx.font = "bold 36px sans-serif";
-          ctx.textAlign = "center";
-          ctx.lineWidth = 2;
-          ctx.globalAlpha = idlePulse;
-          ctx.strokeStyle = "white";
-          ctx.strokeText("Tap to shoot", canvas.width / 2, canvas.height / 1.5);
-          ctx.fillStyle = "white";
-          ctx.fillText("Tap to shoot", canvas.width / 2, canvas.height / 1.5);
-          ctx.globalAlpha = 1;
-        }		
+		
+		if (Date.now() - lastTouchTime > 3000) {
+		  showIdlePrompt = true;
+		} else {
+		  showIdlePrompt = false;
+		}
+		
+		idlePulse = Math.sin(Date.now() / 500) * 0.3 + 0.7;
+		
+		if (showIdlePrompt) {
+		  ctx.font = "bold 36px sans-serif";
+		  ctx.textAlign = "center";
+		  ctx.lineWidth = 2;
+		  ctx.globalAlpha = idlePulse;
+
+		  // Обводка
+		  ctx.strokeStyle = "white";
+		  ctx.strokeText("Tap to shoot", canvas.width / 2, canvas.height / 1.5);
+
+		  // Заливка
+		  ctx.fillStyle = "white";
+		  ctx.fillText("Tap to shoot", canvas.width / 2, canvas.height / 1.5);
+
+		  ctx.globalAlpha = 1;
+		}		
         requestAnimationFrame(draw);
       }
 
-      // Инициализация
-      resizeCanvas();
       draw();
     };
   </script>
