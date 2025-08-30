@@ -76,7 +76,7 @@
   <button id="soundButton">Sound</button>
 
   <script>
-  let gameUsername = '';
+  let gameUsername = 'gamer12';
 
     window.onload = () => {
       const tg = window.Telegram.WebApp;
@@ -84,7 +84,7 @@
       const user = tg.initDataUnsafe.user;
       if (user) {
         const username = user.username || `${user.first_name} ${user.last_name || ''}`;
-		gameUsername = gameUsername + username;
+		//gameUsername = gameUsername + username;
 		document.getElementById("title").textContent = `Player: ${gameUsername}`;
 		setTimeout(() => {
 		  loadScoreFromServer();
