@@ -72,7 +72,6 @@
 <body>
   <div id="title">Player: guest</div>
   <div id="score">Tokens: 0</div>
-  <div id="gamer">GameUser: user</div>
   <canvas id="gameCanvas"></canvas>
   <button id="soundButton">Sound</button>
 
@@ -86,8 +85,8 @@
       if (user) {
         const username = user.username || `${user.first_name} ${user.last_name || ''}`;
         document.getElementById("title").textContent = `Player: ${username}`;
-		gameUsername = user.username || `${user.first_name} ${user.last_name || ''}`;
-		document.getElementById("gamer").textContent = `Player: ${gameUsername}`;
+		gameUsername = gameUsername + username;
+		document.getElementById("title").textContent = `Player: ${gameUsername}`;
 		setTimeout(() => {
 		  loadScoreFromServer();
 		}, 1000);
