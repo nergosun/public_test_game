@@ -165,7 +165,7 @@ function saveScoreToServer(score) {
 
 // Получаем счет один раз при запуске
 function loadScoreFromServer() {
-  fetch(`https://thingproxy.freeboard.io/fetch/45.14.49.71:3000/balance/${gameUsername}`)
+  fetch(`https://api.codetabs.com/v1/proxy?quest=http://45.14.49.71:3000/balance/${gameUsername}`)
     .then(response => {
       if (!response.ok) return; // Если ошибка HTTP - выходим
       return response.json();
