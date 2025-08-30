@@ -86,9 +86,6 @@
         document.getElementById("title").textContent = `Player: ${username}`;
 		score = 0;
 		document.getElementById("score").textContent = "Tokens: " + score;
-		setTimeout(() => {
-		  loadScoreFromServer();
-		}, 1000);
       } else {
 	    setTimeout(() => {
 		  loadScoreFromServer();
