@@ -83,7 +83,7 @@
       if (user) {
         const username = user.username || `${user.first_name} ${user.last_name || ''}`;
         document.getElementById("title").textContent = `Player: ${username}`;
-		gameUsername = `${username}`;
+		gameUsername = username;
       } else {
 	    setTimeout(() => {
 		  loadScoreFromServer();
@@ -93,7 +93,7 @@
 	  
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
-
+}
 // --- HOWLER.JS АУДИО СИСТЕМА С ПЕРЕКЛЮЧАТЕЛЕМ ---
 let soundsEnabled = false;
 let goalSound, saveSound, backgroundMusic;
