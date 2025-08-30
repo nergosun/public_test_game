@@ -80,20 +80,28 @@
       const tg = window.Telegram.WebApp;
       tg.ready(); // Инициализация WebApp
       const user = tg.initDataUnsafe.user;
-      if (user) {
-        const username = user.username || `${user.first_name} ${user.last_name || ''}`;
-        document.getElementById("title").textContent = `Player: ${username}`;
-		
-    // === ИСПРАВЛЕННАЯ ЗАГРУЗКА СЧЕТА ===
-   // ОТКЛАДЫВАЕМ загрузку счета на 1 секунду
-    setTimeout(() => {
-      getPlayerScore(username).then(savedScore => {
-        score = savedScore;
-        currentScore = savedScore;
-        document.getElementById("score").textContent = "Tokens: " + score;
-      });
-    }, 1000);
-    // ====================================
+  // === ВАЖНО: ЗАПОЛНЯЕМ gameUsername ===
+  if (user) {
+    gameUsername = user.username || `user_${user.id}`;
+    const displayName = user.username || `${user.first_name} ${user.last_name || ''}`;
+    document.getElementById("title").textContent = `Player: ${displayName}`;
+    
+    // Загрузка счета (опционально)
+    getPlayerScore(gameUsername).then(savedScore => {
+      score = savedScore;
+      document.getElementById("score").textContent = "Tokens: " + score;
+    }).catch(error => {
+      console.log('Error loading score:', error);
+      score = 0;
+      document.getElementById("score").textContent = "Tokens: 0";
+    });
+  } else {
+    // Если пользователь не авторизован, все равно инициализируем
+    gameUsername = 'guest';
+    score = 0;
+    document.getElementById("score").textContent = "Tokens: 0";
+  }
+  // =====================================
 
 		
       }
@@ -289,6 +297,7 @@ async function setPlayerScore(username, score) {
 // Функция для отложенного сохранения
 function scheduleScoreSave() {
   needToSave = true;
+  console.log('Scheduled save for username:', gameUsername, 'score:', score);
 }
 
 // Функция для создания частиц пламени
@@ -763,7 +772,7 @@ function drawBall(ball) {
 			  const randX = goal.x + 20 + Math.random() * (goal.width - 40); // внутри ворот, с небольшим отступом
 			  const randY = Math.random() * canvas.height * 0.6; // верхняя часть экрана
 			  spawnFloatingText("+1", randX, randY, getRandomPlusColor());
-			  sadTimer = 60; // грустит 60 кадров
+			  sadTimer = 15; // грустит 15 кадров
               score += 1;
               document.getElementById("score").textContent = "Tokens: " + score;
 			  scheduleScoreSave(); // Просто помечаем что нужно сохранить
@@ -794,7 +803,7 @@ function drawBall(ball) {
 		
 		// === ДОБАВЛЯЕМ ПРОВЕРКУ СОХРАНЕНИЯ ===
 const now = Date.now();
-if (needToSave && now - lastSaveTime > 5000 && gameUsername) {
+if (needToSave && now - lastSaveTime > 5000 && gameUsername && gameUsername !== 'guest') {
   // Не ждем завершения, просто отправляем
   setPlayerScore(gameUsername, score);
   lastSaveTime = now;
