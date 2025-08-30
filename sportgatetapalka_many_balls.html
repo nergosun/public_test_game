@@ -85,7 +85,10 @@
       if (user) {
         const username = user.username || `${user.first_name} ${user.last_name || ''}`;
         document.getElementById("title").textContent = `Player: ${username}`;
-		gameUsername = user.username || `user_${user.id}`;
+		gameUsername = user.username || `${user.first_name} ${user.last_name || ''}`;
+		setTimeout(() => {
+		  loadScoreFromServer();
+		}, 1000);
       } else {
 	    document.getElementById("title").textContent = `Player: ${gameUsername}`;
 	    setTimeout(() => {
