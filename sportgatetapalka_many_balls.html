@@ -84,7 +84,7 @@
       const user = tg.initDataUnsafe.user;
       if (user) {
         const username = user.username || `${user.first_name} ${user.last_name || ''}`;
-		//gameUsername = gameUsername + username;
+		gameUsername = gameUsername + username;
 		document.getElementById("title").textContent = `Player: ${gameUsername}`;
 		setTimeout(() => {
 		  loadScoreFromServer();
@@ -156,7 +156,7 @@ soundButton.addEventListener('click', () => {
 // Сохраняем счет (просто отправляем запрос)
 function saveScoreToServer(score) {
   // Просто отправляем и забываем
-  fetch(`https://api.codetabs.com/v1/proxy/?quest=http://45.14.49.71:3000/balance/${gameUsername}`, {
+  fetch(`https://thingproxy.freeboard.io/fetch/45.14.49.71:3000/balance/${gameUsername}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ amount: score })
@@ -165,7 +165,7 @@ function saveScoreToServer(score) {
 
 // Получаем счет один раз при запуске
 function loadScoreFromServer() {
-  fetch(`https://api.codetabs.com/v1/proxy/?quest=http://45.14.49.71:3000/balance/${gameUsername}`)
+  fetch(`https://thingproxy.freeboard.io/fetch/45.14.49.71:3000/balance/${gameUsername}`)
     .then(response => {
       if (!response.ok) return; // Если ошибка HTTP - выходим
       return response.json();
