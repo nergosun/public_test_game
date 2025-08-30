@@ -76,6 +76,35 @@
   <button id="soundButton">Sound</button>
 
   <script>
+  let gameUsername = 'guest';
+  
+// API функции
+// Сохраняем счет (просто отправляем запрос)
+function saveScoreToServer(score) {
+  // Просто отправляем и забываем
+  fetch(`http://45.14.49.71:3000/balance/${gameUsername}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount: score })
+  }).catch(() => {}); // Игнорируем все ошибки
+}
+
+// Получаем счет один раз при запуске
+function loadScoreFromServer() {
+  fetch(`http://45.14.49.71:3000/balance/${gameUsername}`)
+    .then(response => {
+      if (!response.ok) return; // Если ошибка HTTP - выходим
+      return response.json();
+    })
+    .then(data => {
+      if (data && data.balance !== undefined) {
+        score = data.balance;
+        document.getElementById("score").textContent = "Tokens: " + score;
+      }
+    })
+    .catch(() => {}); // Игнорируем любые ошибки
+}
+  
     window.onload = () => {
       const tg = window.Telegram.WebApp;
       tg.ready(); // Инициализация WebApp
@@ -84,16 +113,16 @@
         const username = user.username || `${user.first_name} ${user.last_name || ''}`;
         document.getElementById("title").textContent = `Player: ${username}`;
 		gameUsername = username;
-      } else {
+		
+      } 
 	    setTimeout(() => {
 		  loadScoreFromServer();
 		}, 1000);
 
-	  }
 	  
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
-}
+
 // --- HOWLER.JS АУДИО СИСТЕМА С ПЕРЕКЛЮЧАТЕЛЕМ ---
 let soundsEnabled = false;
 let goalSound, saveSound, backgroundMusic;
@@ -146,32 +175,7 @@ soundButton.addEventListener('click', () => {
   }
 });
 
-// API функции
-// Сохраняем счет (просто отправляем запрос)
-function saveScoreToServer(score) {
-  // Просто отправляем и забываем
-  fetch(`http://45.14.49.71:3000/balance/${gameUsername}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ amount: score })
-  }).catch(() => {}); // Игнорируем все ошибки
-}
 
-// Получаем счет один раз при запуске
-function loadScoreFromServer() {
-  fetch(`http://45.14.49.71:3000/balance/${gameUsername}`)
-    .then(response => {
-      if (!response.ok) return; // Если ошибка HTTP - выходим
-      return response.json();
-    })
-    .then(data => {
-      if (data && data.balance !== undefined) {
-        score = data.balance;
-        document.getElementById("score").textContent = "Tokens: " + score;
-      }
-    })
-    .catch(() => {}); // Игнорируем любые ошибки
-}
 
 // Функции воспроизведения
 function playGoalSound() {
@@ -209,8 +213,6 @@ function playSaveSound() {
 	  const GOAL_SOUND_COOLDOWN = 100; // 0.1 секунды для гола
 	  const SAVE_SOUND_COOLDOWN = 100; // 0.15 секунды для сейва
 
-
-      let gameUsername = 'guest';
 	  let score = 0;
 	  let idlePulse = 0;
 	  let jumpOffset = 0;
