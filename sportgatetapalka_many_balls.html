@@ -76,7 +76,7 @@
   <button id="soundButton">Sound</button>
 
   <script>
-    window.onload = async () => { // ДОБАВЛЕН async
+    window.onload = () => {
       const tg = window.Telegram.WebApp;
       tg.ready(); // Инициализация WebApp
       const user = tg.initDataUnsafe.user;
@@ -84,12 +84,16 @@
         const username = user.username || `${user.first_name} ${user.last_name || ''}`;
         document.getElementById("title").textContent = `Player: ${username}`;
 		
-		// === ДОБАВЛЯЕМ ЗАГРУЗКУ СОХРАНЕННОГО СЧЕТА ===
-		gameUsername = username; // Сохраняем имя пользователя
-		const savedScore = await getPlayerScore(username);
-		score = savedScore;
-		document.getElementById("score").textContent = "Tokens: " + score;
-		// =============================================
+    // === ИСПРАВЛЕННАЯ ЗАГРУЗКА СЧЕТА ===
+   // ОТКЛАДЫВАЕМ загрузку счета на 1 секунду
+    setTimeout(() => {
+      getPlayerScore(username).then(savedScore => {
+        score = savedScore;
+        currentScore = savedScore;
+        document.getElementById("score").textContent = "Tokens: " + score;
+      });
+    }, 1000);
+    // ====================================
 
 		
       }
@@ -244,26 +248,41 @@ function playSaveSound() {
 async function getPlayerScore(username) {
   try {
     const response = await fetch(`${API_BASE_URL}/balance/${username}`);
+    
+    // Таймаут для мобильных устройств
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Timeout')), 5000)
+    );
+    
+    const data = await Promise.race([response.json(), timeoutPromise]);
+    
     if (response.status === 404) return 0;
-    const data = await response.json();
     return data.balance || 0;
   } catch (error) {
     console.log('Error getting score:', error);
-    return 0;
+    return 0; // Всегда возвращаем 0 при ошибке
   }
 }
 
 // Функция сохранения счета
 async function setPlayerScore(username, score) {
   try {
-    const response = await fetch(`${API_BASE_URL}/balance/${username}`, {
+    // Таймаут для предотвращения зависаний
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    
+    await fetch(`${API_BASE_URL}/balance/${username}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: score })
+      body: JSON.stringify({ amount: score }),
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
     console.log('Score saved successfully');
   } catch (error) {
     console.log('Error saving score:', error);
+    // Не бросаем ошибку дальше
   }
 }
 
@@ -774,13 +793,13 @@ function drawBall(ball) {
         updateGoalkeeper();
 		
 		// === ДОБАВЛЯЕМ ПРОВЕРКУ СОХРАНЕНИЯ ===
-		const now = Date.now();
-		if (needToSave && now - lastSaveTime > 5000 && gameUsername) {
-		  setPlayerScore(gameUsername, score);
-		  lastSaveTime = now;
-		  needToSave = false;
-		}
-		// =====================================
+const now = Date.now();
+if (needToSave && now - lastSaveTime > 5000 && gameUsername) {
+  // Не ждем завершения, просто отправляем
+  setPlayerScore(gameUsername, score);
+  lastSaveTime = now;
+  needToSave = false;
+}		// =====================================
 		
 		if (Date.now() - lastTouchTime > 3000) {
 		  showIdlePrompt = true;
