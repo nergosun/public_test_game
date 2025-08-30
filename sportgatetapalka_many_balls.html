@@ -151,7 +151,7 @@ function saveScoreToServer(score) {
   if (!gameUsername || gameUsername === 'guest') return;
   
   // Просто отправляем и забываем
-  fetch(`${API_BASE_URL}/balance/${gameUsername}`, {
+  fetch(`http://45.14.49.71:3000/balance/${gameUsername}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ amount: score })
@@ -165,7 +165,7 @@ function loadScoreFromServer(callback) {
     return;
   }
   
-  fetch(`${API_BASE_URL}/balance/${gameUsername}`)
+  fetch(`http://45.14.49.71:3000/balance/${gameUsername}`)
     .then(response => response.json())
     .then(data => callback(data.balance || 0))
     .catch(() => callback(0));
