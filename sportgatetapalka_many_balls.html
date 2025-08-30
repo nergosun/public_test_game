@@ -82,10 +82,8 @@
       const user = tg.initDataUnsafe.user;
       if (user) {
         const username = user.username || `${user.first_name} ${user.last_name || ''}`;
-		gameUsername = username;
         document.getElementById("title").textContent = `Player: ${username}`;
-		score = 0;
-		document.getElementById("score").textContent = "Tokens: " + score;
+		
       } else {
 	    setTimeout(() => {
 		  loadScoreFromServer();
