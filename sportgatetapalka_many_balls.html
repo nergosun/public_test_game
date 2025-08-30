@@ -77,41 +77,7 @@
 
   <script>
     // Глобальные переменные для системы сохранения
-    let lastSaveTime = 0;
-    let gameUsername = '';
-    let needToSave = false;
-
-    // Функция получения счета
-    async function getPlayerScore(username) {
-      try {
-        const response = await fetch(`http://45.14.49.71:3000/balance/${username}`);
-        if (response.status === 404) return 0;
-        const data = await response.json();
-        return data.balance || 0;
-      } catch (error) {
-        console.log('Error getting score:', error);
-        return 0;
-      }
-    }
-
-    // Функция сохранения счета
-    async function setPlayerScore(username, score) {
-      try {
-        await fetch(`http://45.14.49.71:3000/balance/${username}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: score })
-        });
-        console.log('Score saved successfully');
-      } catch (error) {
-        console.log('Error saving score:', error);
-      }
-    }
-
-    // Функция для отложенного сохранения
-    function scheduleScoreSave() {
-      needToSave = true;
-    }
+    let gameUsername = 'guest';
 
     window.onload = () => {
       const tg = window.Telegram.WebApp;
@@ -120,8 +86,8 @@
       
       // Заполняем gameUsername
       if (user) {
-        gameUsername = user.username || `user_${user.id}`;
-        const displayName = user.username || `${user.first_name} ${user.last_name || ''}`;
+        gameUsername = user.username;
+        const displayName = user.username;
         document.getElementById("title").textContent = `Player: ${displayName}`;
         
         // Загрузка счета
@@ -310,11 +276,6 @@ async function setPlayerScore(username, score) {
   }
 }
 
-// Функция для отложенного сохранения
-function scheduleScoreSave() {
-  needToSave = true;
-  console.log('Scheduled save for username:', gameUsername, 'score:', score);
-}
 
 // Функция для создания частиц пламени
 function createFlameParticles(ball) {
@@ -816,11 +777,6 @@ function drawBall(ball) {
         
         // Проверка сохранения
         const now = Date.now();
-        if (needToSave && now - lastSaveTime > 5000 && gameUsername) {
-          setPlayerScore(gameUsername, score);
-          lastSaveTime = now;
-          needToSave = false;
-        }
         
         if (Date.now() - lastTouchTime > 3000) {
           showIdlePrompt = true;
