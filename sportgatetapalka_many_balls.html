@@ -70,7 +70,7 @@
   </style>
 </head>
 <body>
-  <div id="title">Player SportGate.io</div>
+  <div id="title">Player: guest</div>
   <div id="score">Tokens: 0</div>
   <canvas id="gameCanvas"></canvas>
   <button id="soundButton">Sound</button>
@@ -84,9 +84,17 @@
         const username = user.username;
 		gameUsername = username;
         document.getElementById("title").textContent = `Player: ${username}`;
-		
-		loadScoreFromServer();
-      }
+		score = 0;
+		document.getElementById("score").textContent = "Tokens: " + score;
+		setTimeout(() => {
+		  loadScoreFromServer();
+		}, 1000);
+      } else {
+	    setTimeout(() => {
+		  loadScoreFromServer();
+		}, 1000);
+
+	  }
 	  
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
