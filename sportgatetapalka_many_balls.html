@@ -82,12 +82,10 @@
       const user = tg.initDataUnsafe.user;
       if (user) {
         const username = user.username;
+		gameUsername = username;
         document.getElementById("title").textContent = `Player: ${username}`;
 		
-		loadScoreFromServer(function(savedScore) {
-			score = savedScore;
-			document.getElementById("score").textContent = "Tokens: " + score;
-		});
+		loadScoreFromServer();
       }
 	  
       const canvas = document.getElementById("gameCanvas");
@@ -148,8 +146,6 @@ soundButton.addEventListener('click', () => {
 // API функции
 // Сохраняем счет (просто отправляем запрос)
 function saveScoreToServer(score) {
-  if (!gameUsername || gameUsername === 'guest') return;
-  
   // Просто отправляем и забываем
   fetch(`http://45.14.49.71:3000/balance/${gameUsername}`, {
     method: 'POST',
@@ -159,16 +155,19 @@ function saveScoreToServer(score) {
 }
 
 // Получаем счет один раз при запуске
-function loadScoreFromServer(callback) {
-  if (!gameUsername || gameUsername === 'guest') {
-    callback(0);
-    return;
-  }
-  
+function loadScoreFromServer() {
   fetch(`http://45.14.49.71:3000/balance/${gameUsername}`)
-    .then(response => response.json())
-    .then(data => callback(data.balance || 0))
-    .catch(() => callback(0));
+    .then(response => {
+      if (!response.ok) return; // Если ошибка HTTP - выходим
+      return response.json();
+    })
+    .then(data => {
+      if (data && data.balance !== undefined) {
+        score = data.balance;
+        document.getElementById("score").textContent = "Tokens: " + score;
+      }
+    })
+    .catch(() => {}); // Игнорируем любые ошибки
 }
 
 // Функции воспроизведения
@@ -208,7 +207,8 @@ function playSaveSound() {
 	  const SAVE_SOUND_COOLDOWN = 100; // 0.15 секунды для сейва
 
 
-      let score = 0;
+      let gameUsername = 'guest';
+	  let score = 0;
 	  let idlePulse = 0;
 	  let jumpOffset = 0;
 	  let armOffset = 0;
