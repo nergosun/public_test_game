@@ -48,29 +48,29 @@
 	
 #soundButton {
   position: absolute;
-  top: 20px;
+  top: 20px; /* Подвинули выше */
   right: 20px;
   z-index: 100;
   padding: 8px 15px;
-  background: linear-gradient(145deg, #2E8B57, #3CB371);
-  border: 2px solid #FFFFFF;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid #ffffff;
   border-radius: 25px;
   font-weight: bold;
-  color: white;
+  color: #008000;
   font-size: 14px;
   cursor: pointer;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
 }
 
 #soundButton:hover {
+  background: #ffffff;
   transform: scale(1.05);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
 }
   </style>
 </head>
 <body>
-  <div id="title">Player: guest</div>
+  <div id="title">Player SportGate.io</div>
   <div id="score">Tokens: 0</div>
   <canvas id="gameCanvas"></canvas>
   <button id="soundButton">Sound</button>
@@ -83,13 +83,7 @@
       if (user) {
         const username = user.username || `${user.first_name} ${user.last_name || ''}`;
         document.getElementById("title").textContent = `Player: ${username}`;
-		
-      } else {
-	    setTimeout(() => {
-		  loadScoreFromServer();
-		}, 1000);
-
-	  }
+      }
 	  
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
@@ -146,49 +140,16 @@ soundButton.addEventListener('click', () => {
   }
 });
 
-// API функции
-// Сохраняем счет (просто отправляем запрос)
-function saveScoreToServer(score) {
-  // Просто отправляем и забываем
-  fetch(`http://45.14.49.71:3000/balance/${gameUsername}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ amount: score })
-  }).catch(() => {}); // Игнорируем все ошибки
-}
-
-// Получаем счет один раз при запуске
-function loadScoreFromServer() {
-  fetch(`http://45.14.49.71:3000/balance/${gameUsername}`)
-    .then(response => {
-      if (!response.ok) return; // Если ошибка HTTP - выходим
-      return response.json();
-    })
-    .then(data => {
-      if (data && data.balance !== undefined) {
-        score = data.balance;
-        document.getElementById("score").textContent = "Tokens: " + score;
-      }
-    })
-    .catch(() => {}); // Игнорируем любые ошибки
-}
-
 // Функции воспроизведения
 function playGoalSound() {
-  const now = Date.now();
-  
-  if (soundsEnabled && goalSound && now - lastGoalSoundTime > GOAL_SOUND_COOLDOWN) {
+  if (soundsEnabled) {
     goalSound.play();
-	lastGoalSoundTime = now;
   }
 }
 
 function playSaveSound() {
-  const now = Date.now();
-  
-  if (soundsEnabled && saveSound && now - lastSaveSoundTime > SAVE_SOUND_COOLDOWN) {
+  if (soundsEnabled) {
     saveSound.play();
-	lastSaveSoundTime = now;
   }
 }
 
@@ -203,15 +164,7 @@ function playSaveSound() {
 	    showIdleCircle = false;
 	  });
 
-	  // --- СИСТЕМА ЗАДЕРЖКИ ЗВУКОВ С РАЗДЕЛЬНЫМИ НАСТРОЙКАМИ ---
-	  let lastGoalSoundTime = 0;
-	  let lastSaveSoundTime = 0;
-	  const GOAL_SOUND_COOLDOWN = 100; // 0.1 секунды для гола
-	  const SAVE_SOUND_COOLDOWN = 100; // 0.15 секунды для сейва
-
-
-      let gameUsername = 'guest';
-	  let score = 0;
+      let score = 0;
 	  let idlePulse = 0;
 	  let jumpOffset = 0;
 	  let armOffset = 0;
@@ -219,16 +172,11 @@ function playSaveSound() {
 	  let sadTimer = 0
 	  let lastTouchTime = Date.now();
 	  let showIdleCircle = false;
-	  const flameParticles = [];
 	  const floatingTexts = [];
 	  const fireworks = [];
       const balls = [];
       const goal = {};
       const goalkeeper = {};
-	  
-	  const MAX_FIREWORKS = 20; // Максимальное количество фейерверков
-	  const MAX_FLAME_PARTICLES = 30; // Максимальное количество частиц пламени
-	  const MAX_FLOATING_TEXTS = 15; // Максимальное количество текстов
 
       function resizeCanvas() {
         canvas.width = document.documentElement.clientWidth;
@@ -256,58 +204,6 @@ function playSaveSound() {
       window.addEventListener("resize", resizeCanvas);
       resizeCanvas();
 
-// Функция для создания частиц пламени
-function createFlameParticles(ball) {
-
-  // Проверяем лимит частиц пламяни
-  if (flameParticles.length >= MAX_FLAME_PARTICLES) {
-    return;
-  }
-
-  for (let i = 0; i < 1; i++) { // Создаем 3 частицы за кадр
-    flameParticles.push({
-      x: ball.x + Math.random() * 10 - 5,
-      y: ball.y + ball.radius,
-      size: 5 + Math.random() * 8,
-      speed: 2 + Math.random() * 3,
-      angle: Math.PI / 2 + (Math.random() * 0.4 - 0.2), // В основном вниз
-      life: 1,
-      color: "rgb(255, 255, 255)" // Оранжево-желтые цвета
-    });
-  }
-}
-
-// Функция обновления частиц пламени
-function updateFlameParticles() {
-  for (let i = flameParticles.length - 1; i >= 0; i--) {
-    const particle = flameParticles[i];
-    
-    particle.x += Math.cos(particle.angle) * particle.speed;
-    particle.y += Math.sin(particle.angle) * particle.speed;
-    particle.life -= 0.08; // время исчезновения
-    particle.size -= 0.15;
-    
-    if (particle.life <= 0 || particle.size <= 0) {
-      flameParticles.splice(i, 1);
-    }
-  }
-}
-
-// Функция рисования частиц пламени
-function drawFlameParticles() {
-  flameParticles.forEach(particle => {
-    ctx.save();
-    ctx.globalAlpha = particle.life * 0.7;
-    
-    // Градиент для пламени
-ctx.fillStyle = particle.color;
-    ctx.beginPath();
-    ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-    ctx.fill();
-    
-    ctx.restore();
-  });
-}
 	  
 function spawnBall(event) {
   // Получаем координаты нажатия
@@ -356,18 +252,12 @@ canvas.addEventListener("touchstart", function(event) {
 });
 
 function spawnFloatingText(text, x, y, color = "white") {
-  // Проверяем лимит
-  if (floatingTexts.length >= MAX_FLOATING_TEXTS) {
-    // Удаляем самый старый текст если достигли лимита
-    floatingTexts.shift();
-  }
-
   floatingTexts.push({
     text,
     x,
     y,
     alpha: 1,
-    dy: -1.5, // скорость движения частиц текста
+    dy: -1.2,
     color
   });
 }
@@ -376,7 +266,7 @@ function updateFloatingTexts() {
   for (let i = floatingTexts.length - 1; i >= 0; i--) {
     const t = floatingTexts[i];
     t.y += t.dy;
-    t.alpha -= 0.03; // скорость исчезновения частиц текста
+    t.alpha -= 0.02;
     if (t.alpha <= 0) {
       floatingTexts.splice(i, 1);
     }
@@ -412,12 +302,7 @@ function colorToRGB(color) {
 }
 
 function spawnFirework(x, y) {
-  // Проверяем, не превысили ли лимит
-  if (fireworks.length >= MAX_FIREWORKS) {
-    return; // Не создаем новый фейерверк
-  }
-
-  for (let i = 0; i < 20; i++) { // Количество частиц в фейерверке
+  for (let i = 0; i < 40; i++) {
     fireworks.push({
       x: x,
       y: y,
@@ -446,7 +331,7 @@ function updateFireworks() {
     const p = fireworks[i];
     p.x += Math.cos(p.angle) * p.speed;
     p.y += Math.sin(p.angle) * p.speed;
-    p.alpha -= 0.03; // время исчезновения фейерверков
+    p.alpha -= 0.02;
     if (p.alpha <= 0) {
       fireworks.splice(i, 1);
     }
@@ -483,7 +368,7 @@ function hslToRgb(hslColor) {
 function drawFieldStripes() {
   const stripeCount = 7; // количество полос
   const stripeWidth = canvas.width / stripeCount;
-  const colors = ["#2E8B57", "#3CB371"]; // обновлённые зелёные оттенки
+  const colors = ["#228B22", "#6DBE45"]; // обновлённые зелёные оттенки
 
   for (let i = 0; i < stripeCount; i++) {
     ctx.fillStyle = colors[i % 2];
@@ -492,77 +377,55 @@ function drawFieldStripes() {
 }
 
 function drawGoal() {
-  const postWidth = 8;
-  const postHeight = goal.height + 50;
-  const crossbarHeight = 8;
+  const postWidth = 10;
+  const postHeight = goal.height + 40; // Удлиненные стойки
+  const crossbarHeight = 10;
 
-  // Цвет ворот
+  // Цвет стоек и перекладины
   ctx.fillStyle = "#FFFFFF";
-  ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-  ctx.shadowBlur = 4;
 
-  // Стойки и перекладины
-  ctx.fillRect(goal.x, goal.y - postHeight, postWidth, postHeight + 50);
-  ctx.fillRect(goal.x + goal.width - postWidth, goal.y - postHeight, postWidth, postHeight + 50);
+  // Левая стойка — от перекладины до низа ворот
+  ctx.fillRect(goal.x, goal.y - postHeight, postWidth, postHeight+40);
+
+  // Правая стойка
+  ctx.fillRect(goal.x + goal.width - postWidth, goal.y - postHeight, postWidth, postHeight + 40);
+
+  // Перекладина
   ctx.fillRect(goal.x, goal.y - postHeight, goal.width, crossbarHeight);
-  ctx.fillRect(goal.x, goal.y + goal.height - crossbarHeight + postWidth + 1, goal.width, crossbarHeight);
+  
+    // Перекладина вторая
+  ctx.fillRect(goal.x, goal.y, goal.width, crossbarHeight);
 
-  // Сбрасываем тень
-  ctx.shadowColor = "transparent";
-  ctx.shadowBlur = 0;
-
-  // ПРОСТАЯ И ЭФФЕКТИВНАЯ СЕТКА
+  // Сетка ворот — от нижней части до перекладины
   ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
-  ctx.lineWidth = 1;
-  const gridSize = 10;
-  
-  // Вертикальные линии (от низа до верха ворот)
-  for (let x = goal.x + 5; x <= goal.x + goal.width - 5; x += gridSize) {
-    ctx.beginPath();
-    ctx.moveTo(x, goal.y + goal.height - crossbarHeight);
-    ctx.lineTo(x, goal.y - postHeight + crossbarHeight);
-    ctx.stroke();
-  }
-  
-  // Горизонтальные линии (по всей ширине ворот)
-  for (let y = goal.y - postHeight + crossbarHeight; y <= goal.y + goal.height - crossbarHeight; y += gridSize) {
-    ctx.beginPath();
-    ctx.moveTo(goal.x + 5, y);
-    ctx.lineTo(goal.x + goal.width - 5, y);
-    ctx.stroke();
+  const gridSize = 8;
+  for (let x = goal.x+5; x < goal.x + goal.width - 5; x += gridSize) {
+    for (let y = goal.y-5; y > goal.y - postHeight + crossbarHeight; y -= gridSize) {
+      ctx.strokeRect(x, y, gridSize, gridSize);
+    }
   }
 
-  // Обводка ворот
-  ctx.strokeStyle = "#E8E8E8";
+  // Обводка ворот (нижняя часть)
+  ctx.strokeStyle = "white";
   ctx.lineWidth = 2;
-  ctx.strokeRect(goal.x + 1, goal.y, goal.width - 2, goal.height);
+  ctx.strokeRect(goal.x+1, goal.y, goal.width-2, goal.height);
 }
 
 function drawGoalkeeper() {
   ctx.save();
   ctx.translate(0, jumpOffset); // анимация прыжка
-  const skinColor = "#FFDAB9"; // персиковый
-  const jerseyColor = "#1E90FF"; // яркий доджерс-синий
-  const shortsColor = "#000080"; // темно-синий
-  const glovesColor = "#FF4500"; // оранжево-красные перчатки
-
-  // ТЕНЬ ПОД ВРАТАРЕМ
-  ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
-  ctx.beginPath();
-  ctx.ellipse(goalkeeper.x, goalkeeper.y + 55, 15, 5, 0, 0, Math.PI * 2);
-  ctx.fill();
-
+  const skinColor = "#F4C2C2"; // светлый телесный (можно заменить на другой оттенок)
 
   // Майка (верх туловища)
-  ctx.fillStyle = jerseyColor;
+  ctx.fillStyle = "#A9A9A9"; // серая
   ctx.fillRect(goalkeeper.x - 10, goalkeeper.y, 20, 25);
   ctx.font = "bold 16px sans-serif";
   ctx.fillStyle = "white";
   ctx.textAlign = "center";
-  ctx.fillText("1", goalkeeper.x, goalkeeper.y + 18);
+  ctx.fillText("0", goalkeeper.x, goalkeeper.y + 18);
   
   // Шорты
-  ctx.fillStyle = shortsColor; 
+  ctx.fillStyle = "#00BFFF"; // голубые
   ctx.fillRect(goalkeeper.x - 10, goalkeeper.y + 25, 20, 15);
   
   // Голова
@@ -598,12 +461,12 @@ function drawGoalkeeper() {
   // Перчатки
   ctx.beginPath();
   ctx.arc(goalkeeper.x - 30, goalkeeper.y + 9 + armOffset, 6, 0, Math.PI * 2);
-  ctx.fillStyle = glovesColor;
+  ctx.fillStyle = "#FFD700";
   ctx.fill();
 
   ctx.beginPath();
   ctx.arc(goalkeeper.x + 30, goalkeeper.y + 9 + armOffset, 6, 0, Math.PI * 2);
-  ctx.fillStyle = glovesColor;
+  ctx.fillStyle = "#FFD700";
   ctx.fill();
 
   // Ноги
@@ -612,7 +475,7 @@ function drawGoalkeeper() {
   ctx.fillRect(goalkeeper.x + 2, goalkeeper.y + 40 - legOffset, 6, 10);
 
   // Бутсы
-  ctx.fillStyle = "#8B4513";
+  ctx.fillStyle = "black";
   ctx.fillRect(goalkeeper.x - 8, goalkeeper.y + 50 + legOffset, 6, 5);
   ctx.fillRect(goalkeeper.x + 2, goalkeeper.y + 50 - legOffset, 6, 5);
   
@@ -620,14 +483,14 @@ function drawGoalkeeper() {
   if (sadTimer > 0) {
     ctx.beginPath();
     ctx.arc(goalkeeper.x, goalkeeper.y - 5, 6, Math.PI, 2 * Math.PI); // грустный рот
-    ctx.strokeStyle = "#2F4F4F";
+    ctx.strokeStyle = "black";
     ctx.lineWidth = 2;
     ctx.stroke();
     sadTimer--;
   } else {
     ctx.beginPath();
     ctx.arc(goalkeeper.x, goalkeeper.y - 15, 6, 0, Math.PI); // улыбка
-    ctx.strokeStyle = "#2F4F4F";
+    ctx.strokeStyle = "black";
     ctx.lineWidth = 2;
     ctx.stroke();
   }
@@ -671,32 +534,25 @@ function drawGoalkeeper() {
         ctx.fill();
       }
 
-function drawBall(ball) {
-  // Создаем частицы следа (ОСТАВЛЯЕМ)
-  if (ball.active && ball.speedY < 0) {
-    createFlameParticles(ball);
-  }
-  
-  // Рисуем обычный мяч БЕЗ пламени вокруг (УБИРАЕМ пламя)
-  ctx.save();
-  ctx.translate(ball.x, ball.y);
-  ctx.rotate(ball.angle);
-  
-  // Просто мяч без каких-либо эффектов пламени
-  ctx.beginPath();
-  ctx.fillStyle = "white";
-  ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = "black";
-  ctx.stroke();
+      function drawBall(ball) {
+        ctx.save();
+        ctx.translate(ball.x, ball.y);
+        ctx.rotate(ball.angle);
+        ctx.beginPath();
+        ctx.fillStyle = "white";
+        ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "black";
+        ctx.stroke();
 
-  ctx.fillStyle = "black";
-  drawHexagon(ctx, -7, -7, 6);
-  drawHexagon(ctx, 8, -5, 6);
-  drawHexagon(ctx, 0, 9, 6);
+        ctx.fillStyle = "black";
+		
+        drawHexagon(ctx, -7, -7, 6);
+        drawHexagon(ctx, 8, -5, 6);
+        drawHexagon(ctx, 0, 9, 6);
 
-  ctx.restore();
-}
+        ctx.restore();
+      }
 
       function updateBalls() {
         for (let i = balls.length - 1; i >= 0; i--) {
@@ -731,7 +587,6 @@ function drawBall(ball) {
 			  sadTimer = 60; // грустит 60 кадров
               score += 1;
               document.getElementById("score").textContent = "Tokens: " + score;
-			  saveScoreToServer(score);
               ball.active = false;
               balls.splice(i, 1);
             } else if (ball.y + ball.radius < 0) {
@@ -745,8 +600,6 @@ function drawBall(ball) {
       function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 		drawFieldStripes();
-		updateFlameParticles();
-		drawFlameParticles();
 		drawFloatingTexts();
 		updateFloatingTexts();
 		drawFireworks();
