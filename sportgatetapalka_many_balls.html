@@ -76,17 +76,34 @@
   <button id="soundButton">Sound</button>
 
   <script>
-    window.onload = () => {
+    window.onload = async () => { // ДОБАВЛЕН async
       const tg = window.Telegram.WebApp;
       tg.ready(); // Инициализация WebApp
       const user = tg.initDataUnsafe.user;
       if (user) {
         const username = user.username || `${user.first_name} ${user.last_name || ''}`;
         document.getElementById("title").textContent = `Player: ${username}`;
+		
+		// === ДОБАВЛЯЕМ ЗАГРУЗКУ СОХРАНЕННОГО СЧЕТА ===
+		gameUsername = username; // Сохраняем имя пользователя
+		const savedScore = await getPlayerScore(username);
+		score = savedScore;
+		document.getElementById("score").textContent = "Tokens: " + score;
+		// =============================================
+
+		
       }
 	  
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
+
+  // === ДОБАВЛЯЕМ ЭТИ ПЕРЕМЕННЫЕ ДЛЯ СИСТЕМЫ СОХРАНЕНИЯ ===
+  const API_BASE_URL = 'http://45.14.49.71:3000';
+  let lastSaveTime = 0;
+  let gameUsername = '';
+  let needToSave = false;
+  // ======================================================
+
 
 // --- HOWLER.JS АУДИО СИСТЕМА С ПЕРЕКЛЮЧАТЕЛЕМ ---
 let soundsEnabled = false;
@@ -221,6 +238,39 @@ function playSaveSound() {
 
       window.addEventListener("resize", resizeCanvas);
       resizeCanvas();
+
+// === ДОБАВЛЯЕМ ЭТИ ФУНКЦИИ ДЛЯ РАБОТЫ С API ===
+// Функция получения счета
+async function getPlayerScore(username) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/balance/${username}`);
+    if (response.status === 404) return 0;
+    const data = await response.json();
+    return data.balance || 0;
+  } catch (error) {
+    console.log('Error getting score:', error);
+    return 0;
+  }
+}
+
+// Функция сохранения счета
+async function setPlayerScore(username, score) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/balance/${username}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: score })
+    });
+    console.log('Score saved successfully');
+  } catch (error) {
+    console.log('Error saving score:', error);
+  }
+}
+
+// Функция для отложенного сохранения
+function scheduleScoreSave() {
+  needToSave = true;
+}
 
 // Функция для создания частиц пламени
 function createFlameParticles(ball) {
@@ -697,6 +747,7 @@ function drawBall(ball) {
 			  sadTimer = 60; // грустит 60 кадров
               score += 1;
               document.getElementById("score").textContent = "Tokens: " + score;
+			  scheduleScoreSave(); // Просто помечаем что нужно сохранить
               ball.active = false;
               balls.splice(i, 1);
             } else if (ball.y + ball.radius < 0) {
@@ -721,6 +772,15 @@ function drawBall(ball) {
         balls.forEach(drawBall);
         updateBalls();
         updateGoalkeeper();
+		
+		// === ДОБАВЛЯЕМ ПРОВЕРКУ СОХРАНЕНИЯ ===
+		const now = Date.now();
+		if (needToSave && now - lastSaveTime > 5000 && gameUsername) {
+		  setPlayerScore(gameUsername, score);
+		  lastSaveTime = now;
+		  needToSave = false;
+		}
+		// =====================================
 		
 		if (Date.now() - lastTouchTime > 3000) {
 		  showIdlePrompt = true;
