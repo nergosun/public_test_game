@@ -77,7 +77,6 @@
 
   <script>
     // Глобальные переменные для системы сохранения
-    const API_BASE_URL = 'http://45.14.49.71:3000';
     let lastSaveTime = 0;
     let gameUsername = '';
     let needToSave = false;
@@ -85,7 +84,7 @@
     // Функция получения счета
     async function getPlayerScore(username) {
       try {
-        const response = await fetch(`${API_BASE_URL}/balance/${username}`);
+        const response = await fetch(`http://45.14.49.71:3000/balance/${username}`);
         if (response.status === 404) return 0;
         const data = await response.json();
         return data.balance || 0;
@@ -98,7 +97,7 @@
     // Функция сохранения счета
     async function setPlayerScore(username, score) {
       try {
-        await fetch(`${API_BASE_URL}/balance/${username}`, {
+        await fetch(`http://45.14.49.71:3000/balance/${username}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ amount: score })
@@ -272,7 +271,7 @@
 // Функция получения счета
 async function getPlayerScore(username) {
   try {
-    const response = await fetch(`${API_BASE_URL}/balance/${username}`);
+    const response = await fetch(`http://45.14.49.71:3000/balance/${username}`);
     
     // Таймаут для мобильных устройств
     const timeoutPromise = new Promise((_, reject) => 
@@ -296,7 +295,7 @@ async function setPlayerScore(username, score) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000);
     
-    await fetch(`${API_BASE_URL}/balance/${username}`, {
+    await fetch(`http://45.14.49.71:3000/balance/${username}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ amount: score }),
@@ -817,7 +816,7 @@ function drawBall(ball) {
         
         // Проверка сохранения
         const now = Date.now();
-        if (needToSave && now - lastSaveTime > 5000 && gameUsername && gameUsername !== 'guest') {
+        if (needToSave && now - lastSaveTime > 5000 && gameUsername) {
           setPlayerScore(gameUsername, score);
           lastSaveTime = now;
           needToSave = false;
