@@ -155,12 +155,18 @@ soundButton.addEventListener('click', () => {
 // API функции
 // Сохраняем счет (просто отправляем запрос)
 function saveScoreToServer(score) {
+  const now = Date.now();
+  if (now - lastSaveTime < SAVE_INTERVAL){
+	return; // Не сохраняем если не прошло 30 секунд
+  }
+  
+  lastSaveTime = now;
   fetch('https://proxy.cors.sh/http://45.14.49.71:3000/balance/' + gameUsername, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       // Этот заголовок обязателен для cors.sh
-      'x-cors-api-key': 'temp_2a563b8e781a60b3619d638f3aa18d3a'
+      'x-cors-api-key': 'test_4a650fe21fab6f54cd69779054fdb1aa03b4c8e5c43cbce443b352b25f58f00c'
     },
     body: JSON.stringify({ amount: score })
   })
@@ -221,6 +227,7 @@ function playSaveSound() {
 
 
 	  let score = 0;
+	  let lastSaveTime = 0; // время последнего сохранения
 	  let idlePulse = 0;
 	  let jumpOffset = 0;
 	  let armOffset = 0;
@@ -235,6 +242,7 @@ function playSaveSound() {
       const goal = {};
       const goalkeeper = {};
 	  
+	  const SAVE_INTERVAL = 30000; // 30 секунд
 	  const MAX_FIREWORKS = 20; // Максимальное количество фейерверков
 	  const MAX_FLAME_PARTICLES = 30; // Максимальное количество частиц пламени
 	  const MAX_FLOATING_TEXTS = 15; // Максимальное количество текстов
