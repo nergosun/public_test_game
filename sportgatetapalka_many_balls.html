@@ -155,12 +155,32 @@ soundButton.addEventListener('click', () => {
 // API функции
 // Сохраняем счет (просто отправляем запрос)
 function saveScoreToServer(score) {
-  // Просто отправляем и забываем
-  fetch(`https://thingproxy.freeboard.io/fetch/45.14.49.71:3000/balance/${gameUsername}`, {
+  if (!gameUsername || gameUsername === 'guest') return;
+  
+  const targetUrl = `http://45.14.49.71:3000/balance/${gameUsername}`;
+  const proxyUrl = `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(targetUrl)}`;
+  
+  // Для отладки
+  console.log('Sending to:', proxyUrl);
+  console.log('Data:', { amount: score });
+  
+  fetch(proxyUrl, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({ amount: score })
-  }).catch(() => {}); // Игнорируем все ошибки
+  })
+  .then(response => {
+    console.log('Response status:', response.status);
+    return response.text();
+  })
+  .then(text => {
+    console.log('Response text:', text);
+  })
+  .catch(error => {
+    console.log('Fetch error:', error);
+  });
 }
 
 // Получаем счет один раз при запуске
