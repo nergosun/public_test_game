@@ -155,32 +155,16 @@ soundButton.addEventListener('click', () => {
 // API функции
 // Сохраняем счет (просто отправляем запрос)
 function saveScoreToServer(score) {
-  if (!gameUsername || gameUsername === 'guest') return;
-  
-  const targetUrl = `http://45.14.49.71:3000/balance/${gameUsername}`;
-  const proxyUrl = `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(targetUrl)}`;
-  
-  // Для отладки
-  console.log('Sending to:', proxyUrl);
-  console.log('Data:', { amount: score });
-  
-  fetch(proxyUrl, {
+  fetch('https://proxy.cors.sh/http://45.14.49.71:3000/balance/' + gameUsername, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      // Этот заголовок обязателен для cors.sh
+      'x-cors-api-key': 'temp_2a563b8e781a60b3619d638f3aa18d3a'
     },
     body: JSON.stringify({ amount: score })
   })
-  .then(response => {
-    console.log('Response status:', response.status);
-    return response.text();
-  })
-  .then(text => {
-    console.log('Response text:', text);
-  })
-  .catch(error => {
-    console.log('Fetch error:', error);
-  });
+  .catch(() => {});
 }
 
 // Получаем счет один раз при запуске
